@@ -1,0 +1,65 @@
+{
+  "$id": "https://artzen.pk/schemas/catalog.json",
+  "title": "Artzen catalog",
+  "type": "object",
+  "required": ["collections", "products"],
+  "additionalProperties": true,
+  "properties": {
+    "collections": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/collection" }
+    },
+    "products": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/product" }
+    }
+  },
+  "$defs": {
+    "collection": {
+      "type": "object",
+      "required": ["slug", "name", "productIds"],
+      "additionalProperties": true,
+      "properties": {
+        "slug": { "type": "string", "minLength": 1 },
+        "name": { "type": "string" },
+        "description": { "type": "string" },
+        "image": { "type": "string" },
+        "productIds": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 }
+        }
+      }
+    },
+    "product": {
+      "type": "object",
+      "required": [
+        "id",
+        "slug",
+        "name",
+        "description",
+        "price",
+        "image",
+        "collectionSlug"
+      ],
+      "additionalProperties": true,
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "slug": { "type": "string", "minLength": 1 },
+        "name": { "type": "string" },
+        "description": { "type": "string" },
+        "longDescription": { "type": "string" },
+        "price": { "type": "number" },
+        "originalPrice": { "type": "number" },
+        "image": { "type": "string", "pattern": "^/" },
+        "images": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "collectionSlug": { "type": "string", "minLength": 1 },
+        "material": { "type": "string" },
+        "dimensions": { "type": "string" },
+        "isNew": { "type": "boolean" }
+      }
+    }
+  }
+}

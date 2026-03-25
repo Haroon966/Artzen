@@ -1,0 +1,22 @@
+{
+  "collections": [
+    {
+      "slug": "sample-collection",
+      "name": "Sample collection",
+      "description": "Replace this file with your catalog or bootstrap from WooCommerce (see ADMIN.md).",
+      "productIds": ["sample-product"]
+    }
+  ],
+  "products": [
+    {
+      "id": "sample-product",
+      "slug": "sample-product",
+      "name": "Sample product",
+      "description": "Short description for listings and meta.",
+      "longDescription": "Longer copy for the product detail page.",
+      "price": 0,
+      "image": "/images/placeholder.svg",
+      "collectionSlug": "sample-collection"
+    }
+  ]
+}

@@ -1,0 +1,11 @@
+# Netlify config for Next.js static export (output: "export")
+# Build output is in "out". Headers are set here so X-Robots-Tag is sent on all responses.
+
+[build]
+  command = "npm run build"
+  publish = "out"
+
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Robots-Tag = "index, follow"

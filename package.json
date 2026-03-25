@@ -1,0 +1,39 @@
+{
+  "name": "artzen",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "catalog:build": "node scripts/catalog-to-generated.mjs",
+    "catalog:from-folders": "node scripts/generate-from-local-folders.mjs",
+    "catalog:validate": "node scripts/validate-catalog.mjs",
+    "images:optimize": "node scripts/optimize-images.mjs",
+    "start": "next start",
+    "lint": "eslint",
+    "test:e2e": "playwright test",
+    "seed:firestore": "tsx scripts/seed-firestore.ts",
+    "admin:set-claim": "node scripts/set-admin-claim.mjs"
+  },
+  "dependencies": {
+    "firebase": "^12.11.0",
+    "firebase-admin": "^13.7.0",
+    "framer-motion": "^12.37.0",
+    "next": "16.1.6",
+    "react": "19.2.3",
+    "react-dom": "19.2.3"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.58.2",
+    "@tailwindcss/postcss": "^4",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "eslint": "^9",
+    "eslint-config-next": "16.1.6",
+    "sharp": "^0.34.5",
+    "tailwindcss": "^4",
+    "tsx": "^4.21.0",
+    "typescript": "^5"
+  }
+}

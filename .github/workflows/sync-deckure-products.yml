@@ -1,0 +1,58 @@
+# Sync product data from the public WooCommerce Store API into this repo.
+# Free tier: GitHub Actions minutes + Netlify build on push (if connected).
+#
+# Setup:
+# - Repository must contain this project at the workflow working directory (repo root = deckure app).
+# - If this app lives in a monorepo subfolder, set SYNC_WORKING_DIRECTORY below via repo Variables
+#   (e.g. deckure) and uncomment the working-directory blocks, or duplicate the job with your path.
+#
+# Optional Netlify: after this workflow pushes, your site rebuilds if Netlify is linked to the repo.
+# If not, add a final step: curl -X POST -d '{}' "${{ secrets.NETLIFY_BUILD_HOOK_URL }}" (store hook URL as a secret).
+
+name: Sync products from WooCommerce
+
+on:
+  workflow_dispatch:
+  schedule:
+    # Weekly Mondays 06:00 UTC — adjust as needed
+    - cron: "0 6 * * 1"
+
+concurrency:
+  group: sync-deckure-products
+  cancel-in-progress: true
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      # Monorepo: set SYNC_WORKING_DIRECTORY (e.g. deckure) and SYNC_FILE_PATTERN (space-separated paths from repo root)
+      SYNC_WORKING_DIRECTORY: ${{ vars.SYNC_WORKING_DIRECTORY || '.' }}
+      SYNC_FILE_PATTERN: ${{ vars.SYNC_FILE_PATTERN || 'src/lib/data.generated.ts public/images/products/*' }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: ${{ env.SYNC_WORKING_DIRECTORY }}/package-lock.json
+
+      - name: Install dependencies
+        working-directory: ${{ env.SYNC_WORKING_DIRECTORY }}
+        run: npm ci
+
+      - name: Import from WooCommerce Store API
+        working-directory: ${{ env.SYNC_WORKING_DIRECTORY }}
+        run: node scripts/import-deckure-products.mjs
+
+      - name: Commit and push if changed
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "chore: sync products from WooCommerce Store API"
+          file_pattern: "${{ env.SYNC_FILE_PATTERN }}"

@@ -1,0 +1,26 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isAdmin() {
+      return request.auth != null && request.auth.token.admin == true;
+    }
+
+    // Storefront reads use Firebase Admin SDK on the server — default deny for clients.
+    match /products/{productId} {
+      allow read: if resource.data.published == true;
+      allow write: if isAdmin();
+    }
+
+    match /collections/{slug} {
+      allow read: if resource.data.published == true;
+      allow write: if isAdmin();
+    }
+
+    // Orders: no client reads/writes; server creates via Admin SDK.
+    match /orders/{orderId} {
+      allow read, write: if false;
+    }
+  }
+}

@@ -1,0 +1,59 @@
+# Decap CMS — free Git-backed admin. Replace backend.repo with your GitHub "owner/name".
+# Netlify: enable Identity + Git Gateway, then use backend name: git-gateway (see ADMIN.md).
+#
+# Build: set USE_CONTENT_CATALOG=true and run `node scripts/catalog-to-generated.mjs && npm run build`
+
+backend:
+  name: github
+  repo: your-github-user/your-repo
+  branch: main
+
+# For local development against a real backend:
+# local_backend: true
+
+media_folder: public/images/uploads
+public_folder: /images/uploads
+
+collections:
+  - name: catalog
+    label: Product catalog
+    files:
+      - label: Catalog (collections + products)
+        name: catalog
+        file: content/catalog.json
+        format: json
+        fields:
+          - label: Collections
+            name: collections
+            widget: list
+            summary: "{{fields.name}} ({{fields.slug}})"
+            fields:
+              - { label: Slug, name: slug, widget: string }
+              - { label: Name, name: name, widget: string }
+              - { label: Description, name: description, widget: text, required: false }
+              - label: Product IDs (order)
+                name: productIds
+                widget: list
+                field: { label: Product ID, name: id, widget: string }
+          - label: Products
+            name: products
+            widget: list
+            summary: "{{fields.name}}"
+            fields:
+              - { label: ID, name: id, widget: string }
+              - { label: Slug, name: slug, widget: string }
+              - { label: Name, name: name, widget: string }
+              - { label: Short description, name: description, widget: text }
+              - { label: Long description, name: longDescription, widget: text }
+              - { label: Price (PKR), name: price, widget: number, value_type: int, min: 0 }
+              - { label: Original price (sale), name: originalPrice, widget: number, value_type: int, required: false, min: 0 }
+              - { label: Main image path, name: image, widget: string, hint: "e.g. /images/products/foo.webp or /images/uploads/..." }
+              - label: Gallery paths
+                name: images
+                widget: list
+                required: false
+                field: { label: Path, name: path, widget: string }
+              - { label: Collection slug, name: collectionSlug, widget: string }
+              - { label: Material, name: material, widget: string, required: false }
+              - { label: Dimensions, name: dimensions, widget: string, required: false }
+              - { label: Show New badge, name: isNew, widget: boolean, required: false, default: false }
