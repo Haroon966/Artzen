@@ -3,6 +3,14 @@ name: Deploy static site to Hostinger (FTP)
 on:
   push:
     branches: [main]
+    paths:
+      - "src/**"
+      - "public/**"
+      - "scripts/**"
+      - "next.config.ts"
+      - "package.json"
+      - "package-lock.json"
+      - ".github/workflows/deploy-hostinger-static.yml"
   workflow_dispatch:
 
 concurrency:
@@ -23,7 +31,7 @@ jobs:
           cache: npm
 
       - name: Install dependencies
-        run: npm ci
+        run: npm ci --prefer-offline --no-audit --fund=false
 
       - name: Build static export
         run: npm run build
@@ -38,4 +46,4 @@ jobs:
           protocol: ftp
           local-dir: ./out/
           server-dir: /public_html/
-          dangerous-clean-slate: true
+          dangerous-clean-slate: false
