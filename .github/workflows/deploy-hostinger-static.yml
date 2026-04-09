@@ -1,4 +1,4 @@
-name: Build, publish deploy branch, and deploy to Hostinger
+name: Build and deploy to Hostinger (FTP)
 
 on:
   push:
@@ -10,10 +10,8 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  build-and-publish:
+  build-and-deploy:
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -30,37 +28,15 @@ jobs:
       - name: Build static export
         run: npm run build
 
-      - name: Publish static build to deploy branch
-        uses: peaceiris/actions-gh-pages@v4
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./out
-          publish_branch: hostinger-deploy
-          force_orphan: true
-          enable_jekyll: false
-          full_commit_message: |
-            ci: publish static export for Hostinger
-
-  deploy-to-hostinger:
-    runs-on: ubuntu-latest
-    needs: build-and-publish
-    steps:
-      - name: Checkout deploy branch
-        uses: actions/checkout@v4
-        with:
-          ref: hostinger-deploy
-          fetch-depth: 1
-
-      - name: Deploy deploy-branch contents to Hostinger
+      - name: Deploy static export to Hostinger
         uses: SamKirkland/FTP-Deploy-Action@v4.3.6
         with:
           server: ${{ secrets.HOSTINGER_FTP_SERVER }}
           username: ${{ secrets.HOSTINGER_FTP_USERNAME }}
           password: ${{ secrets.HOSTINGER_FTP_PASSWORD }}
           port: ${{ secrets.HOSTINGER_FTP_PORT }}
-          protocol: ftps
+          protocol: ftp
           timeout: 120000
-          local-dir: ./
+          local-dir: ./out/
           server-dir: /public_html/
-          state-name: .ftp-state-hostinger-deploy-branch.json
-          dangerous-clean-slate: true
+          state-name: .ftp-state-hostinger-static.json
