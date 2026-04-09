@@ -1,0 +1,8 @@
+User-Agent: *
+Allow: /
+Disallow: /checkout
+Disallow: /cart
+Disallow: /favorites
+Disallow: /api
+
+Sitemap: https://artzens.com/sitemap.xml

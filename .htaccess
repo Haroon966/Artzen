@@ -1,0 +1,22 @@
+# Allow unrestricted access to all users, including bots, and allow routing for all pages.
+
+Options -Indexes
+DirectoryIndex index.html
+
+# Preserve true 404 responses for unknown URLs.
+ErrorDocument 404 /404.html
+
+<IfModule mod_authz_core.c>
+  Require all granted
+</IfModule>
+<IfModule !mod_authz_core.c>
+  Order allow,deny
+  Allow from all
+</IfModule>
+
+# Explicitly allow all user agents (bots and browsers) in case of robots.txt fallback
+<Files "robots.txt">
+  <IfModule mod_headers.c>
+    Header set Content-Type "text/plain"
+  </IfModule>
+</Files>
