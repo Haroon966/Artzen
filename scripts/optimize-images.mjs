@@ -9,8 +9,8 @@ import fs from "fs";
 import path from "path";
 import sharp from "sharp";
 
-const PRODUCTS_DIR = path.join(process.cwd(), "public/images/products");
-const MAX_WIDTH = 1600;
+const IMAGES_DIR = path.join(process.cwd(), "public/images");
+const MAX_WIDTH = 1400;
 
 const RASTER = new Set([".jpg", ".jpeg", ".png", ".webp"]);
 
@@ -29,9 +29,9 @@ async function optimizeFile(filePath) {
   if (ext === ".png") {
     buf = await pipeline.png({ compressionLevel: 9, effort: 8 }).toBuffer();
   } else if (ext === ".jpg" || ext === ".jpeg") {
-    buf = await pipeline.jpeg({ quality: 82, mozjpeg: true }).toBuffer();
+    buf = await pipeline.jpeg({ quality: 76, mozjpeg: true }).toBuffer();
   } else if (ext === ".webp") {
-    buf = await pipeline.webp({ quality: 82, effort: 5 }).toBuffer();
+    buf = await pipeline.webp({ quality: 74, effort: 6 }).toBuffer();
   } else {
     return;
   }
@@ -55,11 +55,11 @@ async function walk(dir) {
 }
 
 async function main() {
-  if (!fs.existsSync(PRODUCTS_DIR)) {
-    console.error("Missing", PRODUCTS_DIR);
+  if (!fs.existsSync(IMAGES_DIR)) {
+    console.error("Missing", IMAGES_DIR);
     process.exit(1);
   }
-  await walk(PRODUCTS_DIR);
+  await walk(IMAGES_DIR);
   console.log("Done.");
 }
 

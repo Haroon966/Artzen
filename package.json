@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
+    "build:hostinger-upload": "npm run build && rm -f hostinger-upload.zip && (cd out && zip -rq ../hostinger-upload.zip .)",
     "catalog:build": "node scripts/catalog-to-generated.mjs",
     "catalog:from-folders": "node scripts/generate-from-local-folders.mjs",
     "catalog:validate": "node scripts/validate-catalog.mjs",

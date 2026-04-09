@@ -1,16 +1,8 @@
-name: Deploy static site to Hostinger (FTP)
+name: Build, publish deploy branch, and deploy to Hostinger
 
 on:
   push:
     branches: [main]
-    paths:
-      - "src/**"
-      - "public/**"
-      - "scripts/**"
-      - "next.config.ts"
-      - "package.json"
-      - "package-lock.json"
-      - ".github/workflows/deploy-hostinger-static.yml"
   workflow_dispatch:
 
 concurrency:
@@ -18,8 +10,10 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  deploy:
+  build-and-publish:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -36,14 +30,37 @@ jobs:
       - name: Build static export
         run: npm run build
 
-      - name: Deploy to Hostinger via FTP
-        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+      - name: Publish static build to deploy branch
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./out
+          publish_branch: hostinger-deploy
+          force_orphan: true
+          enable_jekyll: false
+          full_commit_message: |
+            ci: publish static export for Hostinger
+
+  deploy-to-hostinger:
+    runs-on: ubuntu-latest
+    needs: build-and-publish
+    steps:
+      - name: Checkout deploy branch
+        uses: actions/checkout@v4
+        with:
+          ref: hostinger-deploy
+          fetch-depth: 1
+
+      - name: Deploy deploy-branch contents to Hostinger
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.6
         with:
           server: ${{ secrets.HOSTINGER_FTP_SERVER }}
           username: ${{ secrets.HOSTINGER_FTP_USERNAME }}
           password: ${{ secrets.HOSTINGER_FTP_PASSWORD }}
           port: ${{ secrets.HOSTINGER_FTP_PORT }}
           protocol: ftp
-          local-dir: ./out/
+          timeout: 120000
+          local-dir: ./
           server-dir: /public_html/
-          dangerous-clean-slate: false
+          state-name: .ftp-state-hostinger-deploy-branch.json
+          dangerous-clean-slate: true

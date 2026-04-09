@@ -35,7 +35,7 @@ const googleVerification = getGoogleSiteVerification();
 const sameAs = getSameAsUrls();
 
 const siteDescription =
-  "Pakistan's favourite online store. Shop home decor, fashion, gifts, wall art and more. Cash on Delivery nationwide. Shop now at Artzen.pk.";
+  "Pakistan's favourite online store. Shop home decor, fashion, gifts, wall art and more. Cash on Delivery nationwide. Shop now at Artzens.com.";
 
 export const viewport: Viewport = {
   themeColor: "#7DAA8A",
@@ -88,7 +88,7 @@ const organizationSchema = {
   "@type": "Organization",
   "@id": `${siteOrigin}/#organization`,
   name: "Artzen",
-  alternateName: "Artzen.pk",
+  alternateName: "Artzens.com",
   url: siteOrigin,
   logo: {
     "@type": "ImageObject",

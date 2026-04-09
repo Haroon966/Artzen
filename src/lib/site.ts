@@ -2,7 +2,7 @@
 export function getSiteOrigin(): string {
   const url = process.env.NEXT_PUBLIC_SITE_URL?.trim();
   if (url) return url.replace(/\/$/, "");
-  return "https://artzen.pk";
+  return "https://artzens.com";
 }
 
 /** Absolute URL for a site path (path must start with `/`). */

@@ -1,4 +1,4 @@
-# Artzen (artzen.pk)
+# Artzen (artzens.com)
 
 Premium Islamic wall art, MDF wood calligraphy, and home decor. This storefront is shipped as a static Next.js export for CSR-friendly hosting.
 
@@ -25,11 +25,32 @@ npm run build
 
 Build output is generated for static hosting. Use your host upload/deploy flow for the exported site.
 
+Recommended production env values:
+
+```bash
+NEXT_PUBLIC_SITE_URL=https://artzens.com
+NEXT_PUBLIC_WHATSAPP_PHONE=923315856777
+```
+
+For direct Hostinger upload (manual), build and package to a single zip:
+
+```bash
+npm run build:hostinger-upload
+```
+
+This creates `hostinger-upload.zip` at the project root. Upload it to `/public_html/` in Hostinger and extract there.
+
 ## Hosting notes
 
 - `next.config.ts` is configured for static export and image compatibility on static hosts.
 - `public/.htaccess` supports extensionless URLs and static 404 fallback on Apache/shared hosting.
 - `public/_headers`, `vercel.json`, and `netlify.toml` provide header examples for common hosts.
+
+### Hostinger deployment (auto + manual)
+
+- **Automatic (recommended):** push to `main` and GitHub Actions deploys to Hostinger using `.github/workflows/deploy-hostinger-static.yml`.
+- **Manual fallback:** run `npm run build:hostinger-upload`, upload `hostinger-upload.zip` to `/public_html/`, and extract it there.
+- Use manual deployment when FTP secrets are unavailable or you need an urgent one-off upload.
 
 ## Orders
 
@@ -55,6 +76,13 @@ To switch provider, edit `src/app/checkout/CheckoutForm.tsx`.
 - Global metadata and JSON-LD schema are defined in `src/app/layout.tsx`
 - Product and collection routes use static params/metadata for prerendered SEO pages
 - Because the site is a static export, SEO surfaces update on rebuild/redeploy (not at request time)
+
+### SEO domain checklist (before deploy)
+
+- Set `NEXT_PUBLIC_SITE_URL=https://artzens.com`.
+- Confirm canonical URLs resolve to `https://artzens.com` (not old domains).
+- Confirm `sitemap.xml` and `robots.txt` in build output use `https://artzens.com`.
+- If an old domain remains online, set 301 redirects to `https://artzens.com`.
 
 ## Project structure
 
