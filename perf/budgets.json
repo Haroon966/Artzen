@@ -1,0 +1,32 @@
+{
+  "comment": "Lighthouse mobile (local static export) gates for CI. Tune after measuring on your runner.",
+  "routes": {
+    "lighthouse-mobile-home.json": {
+      "label": "Home (/)",
+      "minPerformanceScore": 0.52,
+      "maxLcpMs": 6500,
+      "maxTbtMs": 7000,
+      "maxCls": 0.12
+    },
+    "lighthouse-mobile-shop.json": {
+      "label": "Shop (/shop/)",
+      "minPerformanceScore": 0.48,
+      "maxLcpMs": 9000,
+      "maxTbtMs": 5500,
+      "maxCls": 0.12
+    },
+    "lighthouse-mobile-pdp-bear.json": {
+      "label": "PDP (/products/bear/)",
+      "minPerformanceScore": 0.78,
+      "maxLcpMs": 5500,
+      "maxTbtMs": 4500,
+      "maxCls": 0.12
+    }
+  },
+  "assets": {
+    "maxFaviconPngBytes": 65536,
+    "maxAppIconPngBytes": 524288,
+    "maxProductRasterBytes": 900000,
+    "maxProductImageWidthPx": 1600
+  }
+}

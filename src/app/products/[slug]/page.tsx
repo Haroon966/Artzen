@@ -9,12 +9,18 @@ import {
   getServerProducts,
   getServerProductsByCollection,
 } from "@/lib/catalog-server";
-import { absoluteUrl, getDefaultShareImagePath, getSiteOrigin } from "@/lib/site";
+import {
+  absoluteUrl,
+  canonicalUrl,
+  getDefaultShareImagePath,
+  getSiteOrigin,
+  SITE_BRAND,
+} from "@/lib/site";
 import { clipMetaDescription } from "@/lib/seo";
-import { productDisplayName } from "@/lib/product-name";
+import { productDisplayName, productSeoTitle } from "@/lib/product-name";
 import { ProductImageGallery } from "@/components/ProductImageGallery";
 import { ProductCard } from "@/components/ProductCard";
-import { ProductPdpBuyBox } from "@/components/ProductPdpBuyBox";
+import { ProductPdpPurchaseSection } from "@/components/ProductPdpPurchaseSection";
 import { ProductPdpTabs } from "@/components/ProductPdpTabs";
 
 type Props = { params: Promise<{ slug: string }> };
@@ -27,35 +33,35 @@ export async function generateStaticParams() {
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const origin = getSiteOrigin();
   const { slug } = await params;
   const product = await getServerProductBySlug(slug);
   if (!product) return { title: "Product" };
   const displayName = productDisplayName(product);
-  const rawDesc = `${product.description} Rs. ${product.price.toLocaleString("en-PK")} PKR. Cash on Delivery.`;
+  const seoTitle = productSeoTitle(product);
+  const rawDesc = `${product.description} Rs. ${product.price.toLocaleString("en-PK")} PKR. Cash on Delivery across Pakistan.`;
   const description = clipMetaDescription(rawDesc);
   const ogImage = absoluteUrl(product.image);
-  const url = `${origin}/products/${slug}`;
+  const url = canonicalUrl(`/products/${slug}`);
   const ogFallback = absoluteUrl(getDefaultShareImagePath());
   return {
-    title: displayName,
+    title: seoTitle,
     description,
     alternates: { canonical: url },
     openGraph: {
-      title: displayName,
+      title: seoTitle,
       description,
       url,
-      siteName: "Artzen",
+      siteName: SITE_BRAND,
       type: "website",
       locale: "en_PK",
       images: [
-        { url: ogImage, alt: displayName },
-        { url: ogFallback, alt: "Artzen — online shopping in Pakistan" },
+        { url: ogImage, alt: seoTitle },
+        { url: ogFallback, alt: `${SITE_BRAND} — online shopping in Pakistan` },
       ],
     },
     twitter: {
       card: "summary_large_image",
-      title: displayName,
+      title: seoTitle,
       description,
       images: [ogImage],
     },
@@ -67,17 +73,15 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   };
 }
 
-function formatPrice(price: number) {
-  return `Rs. ${price.toLocaleString("en-PK")}`;
-}
-
+/** Ordered gallery: `images` from catalog (folder / generator order), else primary `image`. */
 function galleryImagesFor(product: Product) {
-  const set = new Set<string>();
-  set.add(product.image);
-  for (const u of product.images ?? []) {
-    if (u) set.add(u);
-  }
-  return Array.from(set);
+  const list = product.images?.length ? [...product.images] : [product.image];
+  const seen = new Set<string>();
+  return list.filter((u) => {
+    if (!u || seen.has(u)) return false;
+    seen.add(u);
+    return true;
+  });
 }
 
 function descriptionBlocks(product: Product) {
@@ -86,6 +90,78 @@ function descriptionBlocks(product: Product) {
     return raw.split(/\n\n+/).map((b) => b.trim()).filter(Boolean);
   }
   return [product.description];
+}
+
+function buildUniquePdpCopy(product: Product, collectionName?: string): string[] {
+  const material = product.material?.trim() || "premium MDF";
+  const dimensions = product.dimensions?.trim() || "multiple size options";
+  const collection = collectionName || product.collectionSlug.replace(/-/g, " ");
+  return [
+    `This ${productDisplayName(product)} design is handcrafted in ${material} with clean finishing for long-term home use.`,
+    `Best suited for ${collection} styling themes, it is available in ${dimensions} so you can match both compact and statement walls.`,
+    "Each order is packed securely and shipped across Pakistan with Cash on Delivery support.",
+  ];
+}
+
+const SCHEMA_SHIPPING_DETAILS = {
+  "@type": "OfferShippingDetails" as const,
+  shippingRate: {
+    "@type": "MonetaryAmount",
+    value: "0",
+    currency: "PKR",
+  },
+  shippingDestination: {
+    "@type": "DefinedRegion",
+    addressCountry: "PK",
+  },
+  deliveryTime: {
+    "@type": "ShippingDeliveryTime",
+    handlingTime: {
+      "@type": "QuantitativeValue",
+      minValue: 1,
+      maxValue: 2,
+      unitCode: "DAY",
+    },
+    transitTime: {
+      "@type": "QuantitativeValue",
+      minValue: 2,
+      maxValue: 5,
+      unitCode: "DAY",
+    },
+  },
+};
+
+const SCHEMA_RETURN_POLICY = {
+  "@type": "MerchantReturnPolicy" as const,
+  returnPolicyCategory:
+    "https://schema.org/MerchantReturnFiniteReturnWindow",
+  merchantReturnDays: 7,
+};
+
+function buildOfferForProduct(
+  origin: string,
+  productUrl: string,
+  priceValidUntil: string,
+  price: string,
+  variant?: { name: string; id: string }
+) {
+  return {
+    "@type": "Offer" as const,
+    url: variant ? `${productUrl}#size-${encodeURIComponent(variant.id)}` : productUrl,
+    ...(variant ? { name: variant.name } : {}),
+    price,
+    priceCurrency: "PKR",
+    priceValidUntil,
+    availability: "https://schema.org/InStock",
+    itemCondition: "https://schema.org/NewCondition",
+    seller: {
+      "@type": "Organization" as const,
+      name: SITE_BRAND,
+      url: origin,
+    },
+    hasMerchantReturnPolicy: SCHEMA_RETURN_POLICY,
+    shippingDetails: SCHEMA_SHIPPING_DETAILS,
+  };
 }
 
 export default async function ProductPage({ params }: Props) {
@@ -128,55 +204,22 @@ export default async function ProductPage({ params }: Props) {
     image: imageUrls,
     brand: {
       "@type": "Brand",
-      name: "Artzen",
+      name: SITE_BRAND,
     },
-    offers: {
-      "@type": "Offer",
-      url: productUrl,
-      price: String(product.price),
-      priceCurrency: "PKR",
-      priceValidUntil,
-      availability: "https://schema.org/InStock",
-      itemCondition: "https://schema.org/NewCondition",
-      seller: {
-        "@type": "Organization",
-        name: "Artzen",
-        url: origin,
-      },
-      hasMerchantReturnPolicy: {
-        "@type": "MerchantReturnPolicy",
-        returnPolicyCategory:
-          "https://schema.org/MerchantReturnFiniteReturnWindow",
-        merchantReturnDays: 7,
-      },
-      shippingDetails: {
-        "@type": "OfferShippingDetails",
-        shippingRate: {
-          "@type": "MonetaryAmount",
-          value: "0",
-          currency: "PKR",
-        },
-        shippingDestination: {
-          "@type": "DefinedRegion",
-          addressCountry: "PK",
-        },
-        deliveryTime: {
-          "@type": "ShippingDeliveryTime",
-          handlingTime: {
-            "@type": "QuantitativeValue",
-            minValue: 1,
-            maxValue: 2,
-            unitCode: "DAY",
-          },
-          transitTime: {
-            "@type": "QuantitativeValue",
-            minValue: 2,
-            maxValue: 5,
-            unitCode: "DAY",
-          },
-        },
-      },
-    },
+    offers:
+      product.sizeOptions && product.sizeOptions.length > 0
+        ? product.sizeOptions.map((o) =>
+            buildOfferForProduct(origin, productUrl, priceValidUntil, String(o.price), {
+              name: o.label,
+              id: o.id,
+            })
+          )
+        : buildOfferForProduct(
+            origin,
+            productUrl,
+            priceValidUntil,
+            String(product.price)
+          ),
   };
 
   const breadcrumbSchema = {
@@ -218,6 +261,14 @@ export default async function ProductPage({ params }: Props) {
       label: "Material",
       value: product.material ?? "Premium MDF wood and finishes (see product notes)",
     },
+    ...(product.pricingDetail
+      ? [
+          {
+            label: "Sizes & prices (rate list)",
+            value: product.pricingDetail,
+          },
+        ]
+      : []),
     {
       label: "Available sizes",
       value: product.dimensions ?? "Multiple sizes available — see options above",
@@ -330,31 +381,26 @@ export default async function ProductPage({ params }: Props) {
                 </span>
               </div>
 
-              <div className="mt-4 flex flex-wrap items-baseline gap-2.5 border-b border-[var(--border)] pb-4">
-                <span className="font-[var(--font-cormorant)] text-[32px] font-semibold leading-none text-[var(--text-primary)] max-[480px]:text-[26px]">
-                  {formatPrice(product.price)}
-                </span>
-                {onSale && product.originalPrice != null && (
-                  <>
-                    <span className="font-[var(--font-dm-sans)] text-lg text-[var(--text-muted)] line-through">
-                      {formatPrice(product.originalPrice)}
-                    </span>
-                    {discountPct > 0 && (
-                      <span className="rounded-[var(--radius-pill)] bg-[rgba(201,68,68,0.09)] px-2.5 py-0.5 font-[var(--font-dm-sans)] text-[12px] font-semibold text-[var(--red)]">
-                        Save {discountPct}%
-                      </span>
-                    )}
-                  </>
-                )}
-              </div>
-
-              <p className="mt-6 font-[var(--font-dm-sans)] text-[14px] leading-[1.75] text-[var(--text-secondary)]">
-                {product.description}
-              </p>
-
-              <div className="mt-6">
-                <ProductPdpBuyBox product={product} />
-              </div>
+              <ProductPdpPurchaseSection
+                key={product.id}
+                product={product}
+                onSale={onSale}
+                discountPct={discountPct}
+              >
+                <div className="mt-6 space-y-2">
+                  <p className="font-[var(--font-dm-sans)] text-[14px] leading-[1.75] text-[var(--text-secondary)]">
+                    {product.description}
+                  </p>
+                  {buildUniquePdpCopy(product, collection?.name).map((line) => (
+                    <p
+                      key={line}
+                      className="font-[var(--font-dm-sans)] text-[13.5px] leading-[1.7] text-[var(--text-secondary)]/90"
+                    >
+                      {line}
+                    </p>
+                  ))}
+                </div>
+              </ProductPdpPurchaseSection>
 
               <div className="mt-6 space-y-1.5 border-t border-[var(--border)] pt-4 font-[var(--font-dm-sans)] text-[13px] text-[var(--text-muted)]">
                 <p>

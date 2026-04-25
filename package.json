@@ -4,7 +4,8 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "write:llms": "node scripts/write-llms-txt.mjs",
+    "build": "node scripts/write-llms-txt.mjs && next build",
     "build:hostinger-upload": "npm run build && rm -f hostinger-upload.zip && (cd out && zip -rq ../hostinger-upload.zip .)",
     "catalog:build": "node scripts/catalog-to-generated.mjs",
     "catalog:from-folders": "node scripts/generate-from-local-folders.mjs",
@@ -12,11 +13,18 @@
     "images:optimize": "node scripts/optimize-images.mjs",
     "start": "next start",
     "lint": "eslint",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "perf:lighthouse": "node scripts/lighthouse-baseline.mjs",
+    "perf:check": "node scripts/check-perf-budgets.mjs",
+    "perf:assets": "node scripts/check-asset-budgets.mjs",
+    "perf:ci": "npm run perf:lighthouse && npm run perf:check && npm run perf:assets",
+    "images:icons": "node scripts/optimize-public-icons.mjs",
+    "validate:seo": "tsx scripts/validate-product-schema-for-seo.ts"
   },
   "dependencies": {
+    "@formspree/core": "^4.0.0",
+    "@formspree/react": "^3.0.0",
     "ajv": "^8.18.0",
-    "firebase": "^12.11.0",
     "framer-motion": "^12.37.0",
     "next": "16.1.6",
     "react": "19.2.3",

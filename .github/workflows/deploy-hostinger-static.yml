@@ -28,6 +28,8 @@ jobs:
       - name: Build static export
         run: npm run build
 
+      # Upload HTML/JS/CSS and small SVGs only — not raster product/hero/marketing images
+      # (serve those from CDN, another host, or sync separately). Re-include paths by editing `exclude`.
       - name: Deploy static export to Hostinger
         uses: SamKirkland/FTP-Deploy-Action@v4.3.6
         with:
@@ -40,3 +42,17 @@ jobs:
           local-dir: ./out/
           server-dir: /public_html/
           state-name: .ftp-state-hostinger-static.json
+          exclude: |
+            **/.git*
+            **/.git*/**
+            **/node_modules/**
+            images/**/*.webp
+            images/**/*.jpg
+            images/**/*.jpeg
+            images/**/*.png
+            images/**/*.gif
+            images/**/*.avif
+            Artzens-logo.png
+            Artzens-logo-light.png
+            Artzen-favicon.png
+            icon.png

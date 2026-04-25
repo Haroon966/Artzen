@@ -1,14 +1,15 @@
+import { SITE_BRAND } from "./site";
+
 /** Homepage FAQ — visible copy must match FAQPage JSON-LD exactly. */
 export const homeFaqItems: { question: string; answer: string }[] = [
   {
     question: "Do you offer Cash on Delivery across Pakistan?",
-    answer:
-      "Yes. Artzen offers Cash on Delivery nationwide so you can pay when your order arrives.",
+    answer: `Yes. ${SITE_BRAND} offers Cash on Delivery nationwide so you can pay when your order arrives.`,
   },
   {
-    question: "What can I buy at Artzen?",
+    question: `What can I buy at ${SITE_BRAND}?`,
     answer:
-      "Shop home decor, wall art, Islamic calligraphy, personalized gifts, keychains, and more — all packed with care for delivery across Pakistan.",
+      "Shop home decor, wall art, Islamic calligraphy, personalized gifts, and more — all packed with care for delivery across Pakistan.",
   },
   {
     question: "How long does delivery usually take?",
@@ -30,7 +31,7 @@ export const codFaqItems: { question: string; answer: string }[] = [
       "We offer Cash on Delivery (COD) across Pakistan. Place your order, and pay when your package arrives.",
   },
   {
-    question: "How does Cash on Delivery work at Artzen?",
+    question: `How does Cash on Delivery work at ${SITE_BRAND}?`,
     answer:
       "Add items to your cart and proceed to checkout. Enter your name, phone number, and delivery address. We confirm and ship your order, and you pay the delivery person in cash when you receive it.",
   },
@@ -40,7 +41,7 @@ export const codFaqItems: { question: string; answer: string }[] = [
       "We deliver to all major cities in Pakistan. Delivery times may vary by location. You will receive an update once your order is shipped.",
   },
   {
-    question: "How do I contact Artzen?",
+    question: `How do I contact ${SITE_BRAND}?`,
     answer: "Questions? Contact us via WhatsApp or the Contact page.",
   },
 ];

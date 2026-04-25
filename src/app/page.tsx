@@ -2,19 +2,18 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { absoluteUrl, getDefaultShareImagePath, getSiteOrigin } from "@/lib/site";
 import { faqPageJsonLd, homeFaqItems } from "@/lib/faq-content";
-import { ProductCard } from "@/components/ProductCard";
 import { CategoryGrid } from "@/components/CategoryGrid";
 import { WhyArtzen } from "@/components/WhyArtzen";
 import { HeroProductFan } from "@/components/HeroProductFan";
 import { HomeHeroMobileSlides } from "@/components/HomeHeroMobileSlides";
 import { AnimatedSection } from "@/components/AnimatedSection";
 import { FaqSection } from "@/components/FaqSection";
-import { AnimatedStagger } from "@/components/AnimatedStagger";
+import { HomeMobileShopRedirect } from "@/components/HomeMobileShopRedirect";
 import * as q from "@/lib/catalog-queries";
 import { getCachedCatalog } from "@/lib/catalog-server";
 
 const homeDescription =
-  "Pakistan's favourite online store. Shop home decor, fashion, gifts, wall art and more. Cash on Delivery nationwide.";
+  "Pakistan's favourite online store. Shop home decor, gifts, wall art and more. Cash on Delivery nationwide.";
 
 const origin = getSiteOrigin();
 const defaultOg = absoluteUrl(getDefaultShareImagePath());
@@ -41,17 +40,17 @@ export const metadata: Metadata = {
 
 export default async function Home() {
   const { products, collections } = await getCachedCatalog();
-  const featured = q.getFeaturedProductsFrom(products);
   const heroStripItems = q.getHeroStripProductsFrom(products);
   const homepageCategories = q.getHomepageCollectionsFrom(collections);
   const coverBySlug: Record<string, string | undefined> = {};
   for (const c of homepageCategories) {
-    coverBySlug[c.slug] = q.getCollectionCoverImageFrom(products, c);
+    coverBySlug[c.slug] = q.getCollectionCoverPreferMockupFrom(products, c);
   }
   const homeFaqLd = faqPageJsonLd(homeFaqItems);
 
   return (
     <div>
+      <HomeMobileShopRedirect />
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(homeFaqLd) }}
@@ -91,7 +90,7 @@ export default async function Home() {
             Shop Everything —
             <br />
             <em className="font-normal not-italic text-inherit">
-              Fashion, Home, Art, Gifts &amp; More
+              Home, Art, Gifts &amp; More
             </em>
           </h1>
           <p className="hero__subtitle mt-3 max-w-[22rem] font-[var(--font-dm-sans)] font-normal leading-relaxed md:mx-auto md:hidden">
@@ -102,13 +101,13 @@ export default async function Home() {
               href="/shop"
               className="inline-flex min-h-[50px] w-full items-center justify-center rounded-full bg-[var(--off-white)] px-6 font-[var(--font-dm-sans)] text-[15px] font-semibold text-[var(--slate)] no-underline shadow-md transition-opacity active:opacity-90"
             >
-              Shop now
+              Shop Islamic wall art and gifts
             </Link>
             <Link
               href="/shop?sale=1"
               className="inline-flex min-h-[50px] w-full items-center justify-center rounded-full border-2 border-white/35 bg-transparent px-6 font-[var(--font-dm-sans)] text-[15px] font-semibold text-white no-underline transition-colors active:bg-white/10"
             >
-              View sale
+              View discounted decor deals
             </Link>
           </div>
         </div>
@@ -148,66 +147,26 @@ export default async function Home() {
       <section className="bg-[var(--bg)] px-4 py-12 sm:px-6">
         <AnimatedSection as="div" className="mx-auto max-w-6xl">
           <h2 className="font-[var(--font-cormorant)] text-2xl font-semibold text-[var(--text-primary)]">
-            Curated picks
+            Shop by category
           </h2>
-          <p className="mt-1 text-[var(--muted)]">
-            Handpicked favourites from across our catalogue — wall art, gifts, and more.
+          <p className="mt-1 max-w-2xl text-[var(--muted)]">
+            Tap a category to see wall art, calligraphy, gifts, and more — each opens its collection page.
           </p>
-          <AnimatedStagger
-            className="home-featured-stagger mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-3"
-            childClassName=""
-          >
-            {featured.map((product) => (
-              <ProductCard key={product.id} product={product} />
-            ))}
-          </AnimatedStagger>
+          <div className="mt-8 md:mt-10">
+            <CategoryGrid collections={homepageCategories} coverBySlug={coverBySlug} />
+          </div>
           <div className="mt-10 flex justify-center sm:mt-12">
             <Link
               href="/shop"
               className="rounded-full border border-[var(--border-mid)] bg-[var(--off-white)]/90 px-6 py-3 font-[var(--font-dm-sans)] text-[13px] font-medium text-[var(--text-primary)] no-underline shadow-[var(--shadow-sm)] backdrop-blur-sm transition hover:border-[var(--border-accent)] hover:bg-[var(--bg-card)]"
             >
-              View all products →
+              Browse all wall art products →
             </Link>
           </div>
         </AnimatedSection>
       </section>
 
       <WhyArtzen />
-
-      <section className="relative overflow-hidden bg-[var(--bg-card)] py-14 sm:py-20 md:py-24">
-        <div
-          className="pointer-events-none absolute inset-0 opacity-[0.45]"
-          style={{
-            backgroundImage: `radial-gradient(circle at 20% 30%, rgba(125,170,138,0.08) 0%, transparent 45%),
-              radial-gradient(circle at 80% 70%, rgba(30,40,50,0.04) 0%, transparent 40%)`,
-          }}
-          aria-hidden
-        />
-        <AnimatedSection as="div" className="relative mx-auto max-w-6xl px-4 sm:px-6">
-          <div className="flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
-            <div>
-              <p className="font-[var(--font-dm-sans)] text-[11px] font-medium uppercase tracking-[0.22em] text-[var(--gold)]">
-                Browse
-              </p>
-              <h2 className="mt-2 font-[var(--font-cormorant)] text-[clamp(2rem,4vw,2.75rem)] font-semibold leading-tight text-[var(--text-primary)]">
-                Shop by category
-              </h2>
-              <p className="mt-2 max-w-lg font-[var(--font-dm-sans)] text-[15px] font-light leading-relaxed text-[var(--muted)]">
-                Wall art, calligraphy, gifts, and more — find what fits your space and your people.
-              </p>
-            </div>
-            <Link
-              href="/shop"
-              className="shrink-0 self-start rounded-full border border-[var(--border-mid)] bg-[var(--off-white)]/85 px-5 py-2.5 font-[var(--font-dm-sans)] text-[13px] font-medium text-[var(--text-primary)] no-underline backdrop-blur-sm transition hover:border-[var(--border-accent)] hover:bg-[var(--bg-card)] sm:self-auto"
-            >
-              View all products →
-            </Link>
-          </div>
-          <div className="mt-10 md:mt-12">
-            <CategoryGrid collections={homepageCategories} coverBySlug={coverBySlug} />
-          </div>
-        </AnimatedSection>
-      </section>
 
       <FaqSection items={homeFaqItems} headingId="home-faq-heading" />
 
@@ -223,7 +182,7 @@ export default async function Home() {
             href="/shop"
             className="mt-6 inline-block rounded-full bg-[var(--slate)] px-6 py-3 text-sm font-medium text-[var(--off-white)] no-underline transition hover:bg-[var(--slate-soft)]"
           >
-            Browse all products
+            Browse the full decor catalog
           </Link>
         </AnimatedSection>
       </section>

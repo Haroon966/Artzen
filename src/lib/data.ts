@@ -23,13 +23,20 @@ export interface Product {
   collectionSlug: string;
   material?: string;
   dimensions?: string;
+  /** Full size / tier pricing line from the category rate-list PDF (when available). */
+  pricingDetail?: string;
+  /**
+   * Selectable size / price tiers from the rate-list PDF (label + price + optional material).
+   * When set, PDP uses these instead of generic Small/Medium/Large.
+   */
+  sizeOptions?: Array<{ id: string; label: string; price: number; material?: string }>;
   /** Show golden “New” badge when not on sale (optional). */
   isNew?: boolean;
 }
 
 /** Products that show the New badge (when not on sale). Extend as needed. */
 export const PRODUCT_SLUGS_NEW_BADGE = new Set<string>([
-  "personalized-name-keychain",
+  "custom-logo",
   "kalma-premium",
 ]);
 

@@ -1,15 +1,33 @@
 #!/usr/bin/env node
 /**
  * Builds src/lib/data.generated.ts from public/images/products/* category folders.
- * Pairs PNG + JPEG/mockup shots by normalized filename stem (handles spacing variants).
- * Preserves Customize Keychain products (no category folder).
  *
- * Run: node scripts/generate-from-local-folders.mjs
+ * Two ways to attach multiple images per product:
+ *
+ * 1) Product folder (recommended for several angles / mockups)
+ *    public/images/products/<Category>/<Your Product Name>/*.png
+ *    Any direct subfolder of a category whose name is NOT a technical asset folder
+ *    (see isTechnicalAssetDir) becomes one product; all images inside (any depth) are
+ *    the gallery, ordered by file path.
+ *
+ * 2) Flat PNG + JPEG folders (legacy)
+ *    Files are grouped by normalized filename stem across e.g. PNG/ and * JPEG/ so
+ *    "2001 - Bear.png" and "2001 - Bear.jpg" become one product with two images.
+ *
+ * Rate list PDFs (per category folder, `Rate List *.pdf`) drive price, material, and
+ * dimensions when filenames start with a numeric code: `2001 - Bear.jpg`, `1001 - 4 Qul.jpg`.
+ * Requires `pdftotext` (poppler-utils). Run: npm run catalog:from-folders
  */
 
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
+import {
+  extractLeadingSkuFromBasename,
+  findRateListPdf,
+  parseStandardRateListPdf,
+  parseVintageRateListPdf,
+} from "./rate-list-pdf.mjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PROJECT_ROOT = path.join(__dirname, "..");
@@ -36,52 +54,34 @@ const CATEGORY_DIRS = [
 
 const IMAGE_EXT = new Set([".png", ".jpg", ".jpeg", ".webp"]);
 
-/** Keychain — not generated from folders */
-const KEYCHAIN_COLLECTION = {
-  slug: "customize-keychain",
-  name: "Customize KeyChain",
-  description: "",
-  productIds: ["personalized-name-keychain", "customized-keychains", "customized-keychains-in-pakistan"],
-};
+/** Category subfolders that hold bulk PNG/JPEG dumps — not separate products. */
+const TECHNICAL_DIR_EXACT = new Set(
+  [
+    "png",
+    "jpeg",
+    "jpg",
+    "webp",
+    "svg",
+    "mockups",
+    "mockup",
+    "psd",
+    "wall decoration jpeg",
+    "islamic calligraphy jpeg",
+    "premium islamic calligraphy jpeg",
+    "vintage typographic jpeg",
+  ].map((s) => s.toLowerCase())
+);
 
-const KEYCHAIN_PRODUCTS = [
-  {
-    id: "personalized-name-keychain",
-    slug: "personalized-name-keychain",
-    name: "Personalized Name Keychain",
-    description: "Size : 3*1",
-    longDescription:
-      "The Charm of Personalized Accessories Keychains sirf chabiyan sambhalne ka zariya nahi hain, balkay ye aapki personality ki akasi karti hain. Hamari Customized Keychains in Pakistan ki nayi collection un logo ke liye hai jo apni rozmarra ki cheezon mein ek personal touch chahte hain. Chahe aap apne liye ek stylish accessory dhoond rahe hon ya kisi pyare ko ek munfarid tohfa dena chahte hon, hamari category mein aapko har tarah ke designs milenge. Why Customized Keychains are the Perfect Gift? Jab baat gifting ki aati hai, to log aksar confuse ho jate hain. Ek Personalized Name Keychain ek aisa gift hai jo chota hone ke bawajood boht bari ehmiyat rakhta hai. Ye batata hai ke aapne gift lene mein waqt aur tawajjo lagayi hai. Hamari collection mein aap apne doston, family, aur colleagues ke liye unke naam, pasandida quotes, ya khaas tareekhon (dates) ke sath keychains tayyar karwa sakte hain. Explore Our Diverse Range of Designs Humne is category ko har tabqay ki pasand ko madd-e-nazar rakhte hue design kiya hai: Personalized Name Keychains: Hamari sabse zyada bikne wali product. Hum premium acrylic aur metal ka istemal karte hain taake aapka naam khubsoorat fonts mein chamakta nazar aaye. Islamic Calligraphy Keychains: In mein \"Hasbunallahu wa ni'mal wakeel \" ya \"SubhanAllah\" jaise azkaar nihayat nafees calligraphy mein banaye gaye hain. Ye aapko hamesha Allah ki yaad dilate rehte hain. Photo & Memory Keychains: Apni pasandida tasveer ko hamesha apne sath rakhein. Ye keychains couples aur parents ke liye behtareen hain. Corporate & Logo Keychains: Agar aapka koi business hai, to hum aapke brand logo ke sath bulk mein keychains tayyar kar sakte hain jo marketing ke liye behtareen tool hain. Premium Quality & Durability at Unbeatable Prices Pakistan mein aksar sasti products ki quality achi nahi hoti, lekin humne is purane tasawwur ko khatam kar diya hai. Hamari Acrylic Name Keychains scratch-resistant hain aur inka rang kabhi pheeka nahi parta. Sirf Rs. 200 ki shuru...",
-    price: 200,
-    image: "/images/products/personalized-name-keychain.webp",
-    collectionSlug: "customize-keychain",
-    dimensions: "3*1",
-  },
-  {
-    id: "customized-keychains",
-    slug: "customized-keychains",
-    name: "Customized Keychain",
-    description: "Size : 3*1",
-    longDescription:
-      "The Charm of Personalized Accessories Keychains sirf chabiyan sambhalne ka zariya nahi hain, balkay ye aapki personality ki akasi karti hain. Hamari Customized Keychains in Pakistan ki nayi collection un logo ke liye hai jo apni rozmarra ki cheezon mein ek personal touch chahte hain. Chahe aap apne liye ek stylish accessory dhoond rahe hon ya kisi pyare ko ek munfarid tohfa dena chahte hon, hamari category mein aapko har tarah ke designs milenge. Why Customized Keychains are the Perfect Gift? Jab baat gifting ki aati hai, to log aksar confuse ho jate hain. Ek Personalized Name Keychain ek aisa gift hai jo chota hone ke bawajood boht bari ehmiyat rakhta hai. Ye batata hai ke aapne gift lene mein waqt aur tawajjo lagayi hai. Hamari collection mein aap apne doston, family, aur colleagues ke liye unke naam, pasandida quotes, ya khaas tareekhon (dates) ke sath keychains tayyar karwa sakte hain. Explore Our Diverse Range of Designs Humne is category ko har tabqay ki pasand ko madd-e-nazar rakhte hue design kiya hai: Personalized Name Keychains: Hamari sabse zyada bikne wali product. Hum premium acrylic aur metal ka istemal karte hain taake aapka naam khubsoorat fonts mein chamakta nazar aaye. Islamic Calligraphy Keychains: In mein \"Hasbunallahu wa ni'mal wakeel \" ya \"SubhanAllah\" jaise azkaar nihayat nafees calligraphy mein banaye gaye hain. Ye aapko hamesha Allah ki yaad dilate rehte hain. Photo & Memory Keychains: Apni pasandida tasveer ko hamesha apne sath rakhein. Ye keychains couples aur parents ke liye behtareen hain. Corporate & Logo Keychains: Agar aapka koi business hai, to hum aapke brand logo ke sath bulk mein keychains tayyar kar sakte hain jo marketing ke liye behtareen tool hain. Premium Quality & Durability at Unbeatable Prices Pakistan mein aksar sasti products ki quality achi nahi hoti, lekin humne is purane tasawwur ko khatam kar diya hai. Hamari Acrylic Name Keychains scratch-resistant hain aur inka rang kabhi pheeka nahi parta. Sirf Rs. 200 ki shuru...",
-    price: 200,
-    image: "/images/products/customized-keychains.webp",
-    collectionSlug: "customize-keychain",
-    dimensions: "3*1",
-  },
-  {
-    id: "customized-keychains-in-pakistan",
-    slug: "customized-keychains-in-pakistan",
-    name: "Customized Keychain",
-    description: "Size : 3*1",
-    longDescription:
-      "The Charm of Personalized Accessories Keychains sirf chabiyan sambhalne ka zariya nahi hain, balkay ye aapki personality ki akasi karti hain. Hamari Customized Keychains in Pakistan ki nayi collection un logo ke liye hai jo apni rozmarra ki cheezon mein ek personal touch chahte hain. Chahe aap apne liye ek stylish accessory dhoond rahe hon ya kisi pyare ko ek munfarid tohfa dena chahte hon, hamari category mein aapko har tarah ke designs milenge. Why Customized Keychains are the Perfect Gift? Jab baat gifting ki aati hai, to log aksar confuse ho jate hain. Ek Personalized Name Keychain ek aisa gift hai jo chota hone ke bawajood boht bari ehmiyat rakhta hai. Ye batata hai ke aapne gift lene mein waqt aur tawajjo lagayi hai. Hamari collection mein aap apne doston, family, aur colleagues ke liye unke naam, pasandida quotes, ya khaas tareekhon (dates) ke sath keychains tayyar karwa sakte hain. Explore Our Diverse Range of Designs Humne is category ko har tabqay ki pasand ko madd-e-nazar rakhte hue design kiya hai: Personalized Name Keychains: Hamari sabse zyada bikne wali product. Hum premium acrylic aur metal ka istemal karte hain taake aapka naam khubsoorat fonts mein chamakta nazar aaye. Islamic Calligraphy Keychains: In mein \"Hasbunallahu wa ni'mal wakeel \" ya \"SubhanAllah\" jaise azkaar nihayat nafees calligraphy mein banaye gaye hain. Ye aapko hamesha Allah ki yaad dilate rehte hain. Photo & Memory Keychains: Apni pasandida tasveer ko hamesha apne sath rakhein. Ye keychains couples aur parents ke liye behtareen hain. Corporate & Logo Keychains: Agar aapka koi business hai, to hum aapke brand logo ke sath bulk mein keychains tayyar kar sakte hain jo marketing ke liye behtareen tool hain. Premium Quality & Durability at Unbeatable Prices Pakistan mein aksar sasti products ki quality achi nahi hoti, lekin humne is purane tasawwur ko khatam kar diya hai. Hamari Acrylic Name Keychains scratch-resistant hain aur inka rang kabhi pheeka nahi parta. Sirf Rs. 200 ki shuru...",
-    price: 200,
-    image: "/images/products/customized-keychains-in-pakistan.webp",
-    collectionSlug: "customize-keychain",
-    dimensions: "3*1",
-  },
-];
+function normDirName(name) {
+  return String(name).trim().toLowerCase().replace(/\s+/g, " ");
+}
+
+function isTechnicalAssetDir(name) {
+  const n = normDirName(name);
+  if (TECHNICAL_DIR_EXACT.has(n)) return true;
+  if (n.endsWith(" jpeg")) return true;
+  return false;
+}
 
 function safeSlug(s) {
   return (
@@ -119,6 +119,12 @@ function displayNameFromBase(basename) {
   return cleaned || stripTrailingImageDimensions(noExt) || withoutSku || noExt;
 }
 
+function displayNameFromFolderName(folderName) {
+  let s = String(folderName).replace(/[-_]+/g, " ").replace(/\s+/g, " ").trim();
+  if (!s) return folderName;
+  return s.replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
 function publicUrl(absPath) {
   const rel = path.relative(path.join(PROJECT_ROOT, "public"), absPath);
   return "/" + rel.split(path.sep).map(encodeURIComponent).join("/");
@@ -130,6 +136,47 @@ function rankExt(ext) {
   if (e === ".webp") return 1;
   if (e === ".jpg" || e === ".jpeg") return 2;
   return 3;
+}
+
+function sortImagePaths(paths) {
+  return [...paths].sort((a, b) => {
+    const ra = rankExt(path.extname(a));
+    const rb = rankExt(path.extname(b));
+    if (ra !== rb) return ra - rb;
+    return a.localeCompare(b);
+  });
+}
+
+function discountRateForPrice(price) {
+  if (!Number.isFinite(price) || price <= 0) return 0.15;
+  if (price <= 3000) return 0.15;
+  if (price <= 7000) return 0.18;
+  return 0.2;
+}
+
+function withTieredOriginalPrice(product) {
+  const price = Number(product.price);
+  if (!Number.isFinite(price) || price <= 0) return product;
+  const rate = discountRateForPrice(price);
+  const originalPrice = Math.max(price + 1, Math.round(price / (1 - rate)));
+  return {
+    ...product,
+    price,
+    originalPrice,
+  };
+}
+
+/** Unique public URLs in stable path order (after sortImagePaths). */
+function orderedUniqueUrls(pathsSorted) {
+  const seen = new Set();
+  const out = [];
+  for (const abs of pathsSorted) {
+    const u = publicUrl(abs);
+    if (seen.has(u)) continue;
+    seen.add(u);
+    out.push(u);
+  }
+  return out;
 }
 
 function collectImagesUnderCategoryDir(categoryAbs) {
@@ -157,18 +204,97 @@ function collectImagesUnderCategoryDir(categoryAbs) {
   return files;
 }
 
+function allocateSlug(baseSlug, usedSlugs) {
+  let unique = baseSlug;
+  let n = 2;
+  while (usedSlugs.has(unique)) {
+    unique = `${baseSlug}-${n}`;
+    n++;
+  }
+  usedSlugs.add(unique);
+  return unique;
+}
+
+const shortDesc = "Premium quality MDF wall art. Cash on Delivery across Pakistan.";
+
 /**
  * @param {typeof CATEGORY_DIRS[0]} cfg
- * @param {Set<string>} usedSlugs global id/slug registry (keychain + all categories)
+ * @param {Set<string>} usedSlugs global id/slug registry across categories
+ * @param {Map<number, { price: number, material?: string, dimensions?: string, pricingDetail?: string, sizeOptions?: Array<{id:string,label:string,price:number,material?:string}> }>|null} rateMap
+ * @param {{ price: number, material: string, dimensions: string, pricingDetail?: string, sizeOptions?: Array<{id:string,label:string,price:number,material?:string}> } | null} vintageFlat
  */
-function buildCategoryProducts(cfg, usedSlugs) {
+function buildCategoryProducts(cfg, usedSlugs, rateMap, vintageFlat) {
   const categoryAbs = path.join(PRODUCTS_PUBLIC, cfg.dir);
   if (!fs.existsSync(categoryAbs) || !fs.statSync(categoryAbs).isDirectory()) {
     console.warn(`Skip missing category folder: ${cfg.dir}`);
     return [];
   }
 
-  const files = collectImagesUnderCategoryDir(categoryAbs);
+  const consumedPaths = new Set();
+  const products = [];
+
+  function applyRateFromPdf(product, firstBasename) {
+    if (cfg.slug === "vintage-logo" && vintageFlat) {
+      product.price = vintageFlat.price;
+      product.material = vintageFlat.material;
+      product.dimensions = vintageFlat.dimensions;
+      if (vintageFlat.pricingDetail) product.pricingDetail = vintageFlat.pricingDetail;
+      if (vintageFlat.sizeOptions?.length) product.sizeOptions = vintageFlat.sizeOptions;
+      return;
+    }
+    const sku = extractLeadingSkuFromBasename(firstBasename);
+    if (sku == null || !rateMap || !rateMap.has(sku)) return;
+    const r = rateMap.get(sku);
+    product.price = r.price;
+    if (r.material) product.material = r.material;
+    if (r.dimensions) product.dimensions = r.dimensions;
+    if (r.pricingDetail) product.pricingDetail = r.pricingDetail;
+    if (r.sizeOptions?.length) product.sizeOptions = r.sizeOptions;
+  }
+
+  let directEntries;
+  try {
+    directEntries = fs.readdirSync(categoryAbs, { withFileTypes: true });
+  } catch {
+    return [];
+  }
+
+  // 1) One product per immediate subfolder that is not a technical asset directory
+  for (const ent of directEntries) {
+    if (!ent.isDirectory()) continue;
+    if (isTechnicalAssetDir(ent.name)) continue;
+
+    const subAbs = path.join(categoryAbs, ent.name);
+    const paths = sortImagePaths(collectImagesUnderCategoryDir(subAbs));
+    if (paths.length === 0) continue;
+
+    for (const p of paths) consumedPaths.add(p);
+
+    const urls = orderedUniqueUrls(paths);
+    if (urls.length === 0) continue;
+
+    const baseSlug = safeSlug(ent.name);
+    const slug = allocateSlug(baseSlug || safeSlug(path.basename(paths[0])), usedSlugs);
+    const name = displayNameFromFolderName(ent.name);
+    const main = urls[0];
+
+    const p = {
+      id: slug,
+      slug,
+      name,
+      description: shortDesc,
+      longDescription: shortDesc,
+      price: cfg.defaultPrice,
+      image: main,
+      images: urls,
+      collectionSlug: cfg.slug,
+    };
+    applyRateFromPdf(p, path.basename(paths[0]));
+    products.push(p);
+  }
+
+  // 2) Legacy: group remaining files by filename stem
+  const files = collectImagesUnderCategoryDir(categoryAbs).filter((abs) => !consumedPaths.has(abs));
   const groups = new Map();
 
   for (const abs of files) {
@@ -178,45 +304,32 @@ function buildCategoryProducts(cfg, usedSlugs) {
     groups.get(key).push(abs);
   }
 
-  const products = [];
-
   for (const [, paths] of groups) {
-    paths.sort((a, b) => {
-      const ra = rankExt(path.extname(a));
-      const rb = rankExt(path.extname(b));
-      if (ra !== rb) return ra - rb;
-      return a.localeCompare(b);
-    });
+    const sorted = sortImagePaths(paths);
+    const urls = orderedUniqueUrls(sorted);
+    if (urls.length === 0) continue;
 
-    const firstBase = path.basename(paths[0]);
-    let slug = safeSlug(displayNameFromBase(firstBase));
-    if (!slug || slug === "item") slug = safeSlug(normalizeStem(firstBase));
+    const firstBase = path.basename(sorted[0]);
+    let baseSlug = safeSlug(displayNameFromBase(firstBase));
+    if (!baseSlug || baseSlug === "item") baseSlug = safeSlug(normalizeStem(firstBase));
 
-    let unique = slug;
-    let n = 2;
-    while (usedSlugs.has(unique)) {
-      unique = `${slug}-${n}`;
-      n++;
-    }
-    usedSlugs.add(unique);
-
+    const slug = allocateSlug(baseSlug, usedSlugs);
     const name = displayNameFromBase(firstBase);
-    const urls = [...new Set(paths.map(publicUrl))];
     const main = urls[0];
-    const gallery = urls.length > 1 ? urls : undefined;
 
-    const shortDesc = "Premium quality MDF wall art. Cash on Delivery across Pakistan.";
-    products.push({
-      id: unique,
-      slug: unique,
+    const p = {
+      id: slug,
+      slug,
       name,
       description: shortDesc,
       longDescription: shortDesc,
       price: cfg.defaultPrice,
       image: main,
-      ...(gallery && { images: gallery }),
+      images: urls,
       collectionSlug: cfg.slug,
-    });
+    };
+    applyRateFromPdf(p, firstBase);
+    products.push(p);
   }
 
   return products;
@@ -224,11 +337,28 @@ function buildCategoryProducts(cfg, usedSlugs) {
 
 function main() {
   const folderProducts = [];
-  const collections = [KEYCHAIN_COLLECTION];
-  const usedSlugs = new Set(KEYCHAIN_PRODUCTS.map((p) => p.id));
+  const collections = [];
+  const usedSlugs = new Set();
+
+  /** @type {Map<string, Map<number, { price: number, material?: string, dimensions?: string }>>} */
+  const rateMapsBySlug = new Map();
+  /** @type {Map<string, { price: number, material: string, dimensions: string }>} */
+  const vintageBySlug = new Map();
 
   for (const cfg of CATEGORY_DIRS) {
-    const prods = buildCategoryProducts(cfg, usedSlugs);
+    const pdf = findRateListPdf(cfg.dir);
+    if (cfg.slug === "vintage-logo") {
+      vintageBySlug.set(cfg.slug, pdf ? parseVintageRateListPdf(pdf) : null);
+      rateMapsBySlug.set(cfg.slug, new Map());
+    } else {
+      rateMapsBySlug.set(cfg.slug, pdf ? parseStandardRateListPdf(pdf) : new Map());
+    }
+  }
+
+  for (const cfg of CATEGORY_DIRS) {
+    const rateMap = rateMapsBySlug.get(cfg.slug) ?? new Map();
+    const vintageFlat = cfg.slug === "vintage-logo" ? vintageBySlug.get(cfg.slug) ?? null : null;
+    const prods = buildCategoryProducts(cfg, usedSlugs, rateMap, vintageFlat);
     folderProducts.push(...prods);
     collections.push({
       slug: cfg.slug,
@@ -238,21 +368,24 @@ function main() {
     });
   }
 
-  /** Homepage order: keychain first in nav is optional; match data.ts HOMEPAGE_COLLECTION_SLUGS */
+  /** Homepage / nav order — align with src/lib/catalog-constants.ts HOMEPAGE_COLLECTION_SLUGS where relevant */
   const orderedCollections = [
-    collections.find((c) => c.slug === "customize-keychain"),
     collections.find((c) => c.slug === "premium-islamic-art-collection"),
     collections.find((c) => c.slug === "wall-decoration"),
     collections.find((c) => c.slug === "islamic-calligraphy"),
     collections.find((c) => c.slug === "vintage-logo"),
   ].filter(Boolean);
 
-  const products = [...KEYCHAIN_PRODUCTS, ...folderProducts];
+  const products = folderProducts.map(withTieredOriginalPrice);
+
+  const catalogGeneratedAt = new Date().toISOString();
 
   const content = `// Auto-generated by scripts/generate-from-local-folders.mjs – do not edit by hand.
 // Re-run: npm run catalog:from-folders
 
 import type { Collection, Product } from "./data";
+
+export const catalogGeneratedAt = "${catalogGeneratedAt}" as const;
 
 export const collections: Collection[] = ${JSON.stringify(orderedCollections, null, 2)};
 
@@ -261,9 +394,7 @@ export const products: Product[] = ${JSON.stringify(products, null, 2)};
 
   fs.writeFileSync(OUT_PATH, content, "utf8");
   console.log(`Wrote ${OUT_PATH}`);
-  console.log(
-    `Collections: ${orderedCollections.length}, products: ${products.length} (keychain: ${KEYCHAIN_PRODUCTS.length}, from folders: ${folderProducts.length})`
-  );
+  console.log(`Collections: ${orderedCollections.length}, products: ${products.length}`);
 }
 
 main();

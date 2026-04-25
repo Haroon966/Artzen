@@ -1,6 +1,11 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { absoluteUrl, getDefaultShareImagePath, getSiteOrigin } from "@/lib/site";
+import {
+  absoluteUrl,
+  getDefaultShareImagePath,
+  getSiteOrigin,
+  SITE_BRAND,
+} from "@/lib/site";
 
 const origin = getSiteOrigin();
 const description =
@@ -13,23 +18,40 @@ export const metadata: Metadata = {
   description,
   alternates: { canonical: pageUrl },
   openGraph: {
-    title: "Buying Guide | How to Choose Islamic Wall Art | Artzen",
+    title: `Buying Guide | How to Choose Islamic Wall Art | ${SITE_BRAND}`,
     description,
     url: pageUrl,
-    images: [{ url: ogImage, alt: "Islamic wall art buying guide by Artzen" }],
+    images: [{ url: ogImage, alt: `Islamic wall art buying guide by ${SITE_BRAND}` }],
   },
   twitter: {
     card: "summary_large_image",
-    title: "Buying Guide | How to Choose Islamic Wall Art | Artzen",
+    title: `Buying Guide | How to Choose Islamic Wall Art | ${SITE_BRAND}`,
     description,
     images: [ogImage],
   },
 };
 
 export default function GuidePage() {
+  const howToSchema = {
+    "@context": "https://schema.org",
+    "@type": "HowTo",
+    name: "How to choose Islamic wall art",
+    description:
+      "Step-by-step guide to choosing Islamic wall art size, material, and placement for your home.",
+    step: [
+      { "@type": "HowToStep", name: "Pick style", text: "Choose meaningful calligraphy or decor style for your room theme." },
+      { "@type": "HowToStep", name: "Compare material", text: "Select MDF for durable finish, clean detail, and easier wall mounting." },
+      { "@type": "HowToStep", name: "Match wall size", text: "Measure your wall and choose a product size that balances the space." },
+      { "@type": "HowToStep", name: "Finalize order", text: "Confirm dimensions and place your order with Cash on Delivery support." },
+    ],
+  };
   return (
     <div className="mx-auto max-w-3xl px-4 py-10 sm:px-6">
-      <h1 className="font-serif text-3xl font-bold text-forest">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(howToSchema) }}
+      />
+      <h1 className="font-serif text-2xl font-bold text-forest sm:text-3xl">
         Buying Guide: Islamic Wall Art
       </h1>
       <p className="mt-4 text-lg text-forest/80">
@@ -84,18 +106,18 @@ export default function GuidePage() {
           </li>
           <li>
             <Link
-              href="/collections/mdf-wall-art"
+              href="/collections/wall-decoration"
               className="text-gold hover:underline"
             >
-              MDF Wall Art
+              Wall Art
             </Link>
           </li>
           <li>
             <Link
-              href="/collections/home-decor"
+              href="/collections/vintage-logo"
               className="text-gold hover:underline"
             >
-              Home Decor
+              Vintage & Logo Decor
             </Link>
           </li>
         </ul>

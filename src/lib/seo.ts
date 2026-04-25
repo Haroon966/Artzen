@@ -8,14 +8,13 @@ export function clipMetaDescription(text: string, max = 155): string {
   return `${base.trimEnd()}…`;
 }
 
-/** Title segment only — root `metadata.title.template` adds ` | Artzen`. */
+/** Title segment only — root `metadata.title.template` adds ` | Artzens` (see SITE_BRAND). */
 const COLLECTION_TITLE_BY_SLUG: Record<string, (name: string) => string> = {
   "islamic-calligraphy": (name) =>
     `${name} — Islamic Calligraphy Wall Art (Pakistan)`,
   "premium-islamic-art-collection": (name) =>
     `${name} — Premium Islamic Wall Art`,
   "wall-decoration": (name) => `${name} — MDF & Wall Art`,
-  "customize-keychain": (name) => `${name} — Personalized Keychains`,
   "vintage-logo": (name) => `${name} — Vintage Logo Wall Art`,
 };
 

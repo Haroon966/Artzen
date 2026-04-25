@@ -41,9 +41,8 @@ function getRepresentativeProductsFrom(products: Product[]): Product[] {
   const order = [
     "wall-decoration",
     "islamic-calligraphy",
-    "customize-keychain",
-    "premium-islamic-art-collection",
     "vintage-logo",
+    "premium-islamic-art-collection",
   ];
   const reps: Product[] = [];
   for (const slug of order) {
@@ -86,25 +85,56 @@ export function getCollectionCoverImageFrom(
   return getProductByIdFrom(products, id)?.image;
 }
 
+/**
+ * Cover image for homepage category tiles: for wall-decoration, prefer a lifestyle/mockup
+ * (hoverImage, second gallery asset, or first non-PNG) over the flat PNG packshot.
+ */
+export function getCollectionCoverPreferMockupFrom(
+  products: Product[],
+  collection: Collection
+): string | undefined {
+  const id = collection.productIds[0];
+  if (!id) return undefined;
+  const p = getProductByIdFrom(products, id);
+  if (!p) return undefined;
+  if (collection.slug !== "wall-decoration") {
+    return p.image;
+  }
+  if (p.hoverImage) return p.hoverImage;
+  if (p.images && p.images.length > 1 && p.images[1]) return p.images[1];
+  const alt = p.images?.find((u) => u && u !== p.image && !/\.png(\?|$)/i.test(u));
+  if (alt) return alt;
+  return p.image;
+}
+
 export function getNavCategoryLinksFrom(collections: Collection[]): {
   href: string;
   label: string;
 }[] {
-  return HOMEPAGE_COLLECTION_SLUGS.map((slug) => {
-    const c = getCollectionFrom(collections, slug);
-    return {
-      href: `/collections/${slug}`,
-      label: getCollectionDisplayName(slug, c?.name ?? slug),
-    };
-  });
+  return [
+    { href: "/shop#browse-collections", label: "Collections" },
+    ...HOMEPAGE_COLLECTION_SLUGS.map((slug) => {
+      const c = getCollectionFrom(collections, slug);
+      return {
+        href: `/collections/${slug}`,
+        label: getCollectionDisplayName(slug, c?.name ?? slug),
+      };
+    }),
+  ];
 }
 
 export function shopCategoryFiltersFrom(collections: Collection[]): {
   slug: string | null;
   label: string;
+  href?: string;
 }[] {
   return [
     { slug: null, label: "All products" },
+    {
+      slug: "__collections_hub__",
+      label: "Collections",
+      href: "#browse-collections",
+    },
     ...getHomepageCollectionsFrom(collections).map((c) => ({
       slug: c.slug,
       label: getCollectionDisplayName(c.slug, c.name),

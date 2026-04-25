@@ -1,16 +1,21 @@
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import Link from "next/link";
-import { absoluteUrl, getDefaultShareImagePath, getSiteOrigin } from "@/lib/site";
+import {
+  absoluteUrl,
+  canonicalUrl,
+  getDefaultShareImagePath,
+  getSiteOrigin,
+  SITE_BRAND,
+} from "@/lib/site";
 import { clipMetaDescription, collectionSeoTitle } from "@/lib/seo";
 import {
   getServerCollection,
   getServerCollections,
   getServerProductsByCollection,
 } from "@/lib/catalog-server";
-import { ProductCard } from "@/components/ProductCard";
 import { AnimatedSection } from "@/components/AnimatedSection";
-import { AnimatedStagger } from "@/components/AnimatedStagger";
+import { CollectionProductGallery } from "../CollectionProductGallery";
 
 type Props = { params: Promise<{ slug: string }> };
 
@@ -21,8 +26,7 @@ export async function generateStaticParams() {
   return collections.map((c) => ({ slug: c.slug }));
 }
 
-const genericCollectionDesc =
-  "Shop online at Artzen. Cash on Delivery across Pakistan.";
+const genericCollectionDesc = `Shop online at ${SITE_BRAND}. Cash on Delivery across Pakistan.`;
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const origin = getSiteOrigin();
@@ -33,9 +37,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const descBase =
     slug === "islamic-calligraphy"
       ? `${collection.description?.trim() || collection.name}. Premium Islamic calligraphy and MDF wall art. COD nationwide.`
-      : `${collection.description?.trim() || `${collection.name} at Artzen.`} ${genericCollectionDesc}`;
+      : `${collection.description?.trim() || `${collection.name} at ${SITE_BRAND}.`} ${genericCollectionDesc}`;
   const description = clipMetaDescription(descBase);
-  const url = `${origin}/collections/${slug}`;
+  const url = canonicalUrl(`/collections/${slug}`);
   const ogImage = absoluteUrl(getDefaultShareImagePath());
   return {
     title,
@@ -45,10 +49,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       title,
       description,
       url,
-      siteName: "Artzen",
+      siteName: SITE_BRAND,
       type: "website",
       locale: "en_PK",
-      images: [{ url: ogImage, alt: `${collection.name} — Artzen` }],
+      images: [{ url: ogImage, alt: `${collection.name} — ${SITE_BRAND}` }],
     },
     twitter: {
       card: "summary_large_image",
@@ -85,7 +89,7 @@ export default async function CollectionPage({ params }: Props) {
 
   const listDescription =
     collection.description?.trim() ||
-    `${collection.name} — wall art and decor at Artzen. Cash on Delivery in Pakistan.`;
+    `Shop ${collection.name} at ${SITE_BRAND}: handcrafted wall art and decor in multiple sizes, secure packaging, and Cash on Delivery across Pakistan.`;
 
   const itemListSchema = {
     "@context": "https://schema.org",
@@ -102,8 +106,10 @@ export default async function CollectionPage({ params }: Props) {
     })),
   };
 
+  const gutterX = "px-4 sm:px-6 lg:px-10 xl:px-14 2xl:px-16";
+
   return (
-    <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6">
+    <div className="w-full max-w-none">
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }}
@@ -112,57 +118,60 @@ export default async function CollectionPage({ params }: Props) {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(itemListSchema) }}
       />
-      <nav aria-label="Breadcrumb">
-        <ol
-          className="mb-6 flex flex-wrap items-center gap-x-2 text-sm text-[var(--text-secondary)] [&>li:not(:last-child)]:after:mx-2 [&>li:not(:last-child)]:after:content-['/']"
-          itemScope
-          itemType="https://schema.org/BreadcrumbList"
-        >
-          <li itemProp="itemListElement" itemScope itemType="https://schema.org/ListItem">
-            <Link
-              itemProp="item"
-              href="/"
-              className="text-[var(--text-primary)]/80 no-underline hover:text-[var(--text-primary)]"
-            >
-              <span itemProp="name">Home</span>
-            </Link>
-            <meta itemProp="position" content="1" />
-          </li>
-          <li itemProp="itemListElement" itemScope itemType="https://schema.org/ListItem">
-            <span itemProp="name" className="text-[var(--text-primary)]">
-              {collection.name}
-            </span>
-            <meta itemProp="position" content="2" />
-          </li>
-        </ol>
-      </nav>
-      <AnimatedSection as="div">
-        <h1 className="font-serif text-3xl font-bold text-[var(--text-primary)]">
-          {collection.name}
-        </h1>
-        <p className="mt-2 max-w-2xl text-[var(--text-secondary)]">
-          {isIslamicCalligraphy ? (
-            <>
-              {collection.description || ""} Handcrafted Islamic calligraphy and
-              MDF pieces for your home. We deliver across Pakistan with Cash on
-              Delivery.
-            </>
-          ) : (
-            <>
-              {collection.description || `Browse ${collection.name} at Artzen.`}{" "}
-              Quality picks, careful packaging, Cash on Delivery nationwide.
-            </>
-          )}
-        </p>
-      </AnimatedSection>
-      <AnimatedStagger
-        className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-3"
-        childClassName=""
+      <div
+        className={`collection-page-toolbar sticky z-40 w-full border-b border-[var(--nav-border)] bg-cream/95 py-4 backdrop-blur-md supports-[backdrop-filter]:bg-cream/90 ${gutterX}`}
       >
-        {products.map((product) => (
-          <ProductCard key={product.id} product={product} />
-        ))}
-      </AnimatedStagger>
+        <nav aria-label="Breadcrumb">
+          <ol
+            className="mb-3 flex flex-wrap items-center gap-x-2 text-sm text-[var(--text-secondary)] [&>li:not(:last-child)]:after:mx-2 [&>li:not(:last-child)]:after:content-['/']"
+            itemScope
+            itemType="https://schema.org/BreadcrumbList"
+          >
+            <li itemProp="itemListElement" itemScope itemType="https://schema.org/ListItem">
+              <Link
+                itemProp="item"
+                href="/"
+                className="text-[var(--text-primary)]/80 no-underline hover:text-[var(--text-primary)]"
+              >
+                <span itemProp="name">Home</span>
+              </Link>
+              <meta itemProp="position" content="1" />
+            </li>
+            <li itemProp="itemListElement" itemScope itemType="https://schema.org/ListItem">
+              <span itemProp="name" className="text-[var(--text-primary)]">
+                {collection.name}
+              </span>
+              <meta itemProp="position" content="2" />
+            </li>
+          </ol>
+        </nav>
+        <AnimatedSection as="div">
+          <h1 className="font-serif text-3xl font-bold text-[var(--text-primary)]">
+            {collection.name}
+          </h1>
+        </AnimatedSection>
+      </div>
+      <div className={`w-full pb-16 pt-6 sm:pb-20 ${gutterX}`}>
+        <AnimatedSection as="div">
+          <p className="max-w-3xl text-[var(--text-secondary)]">
+            {isIslamicCalligraphy ? (
+              <>
+                {collection.description || ""} Handcrafted Islamic calligraphy and MDF pieces for
+                your home. We deliver across Pakistan with Cash on Delivery.
+              </>
+            ) : (
+              <>
+                {collection.description ||
+                  `Browse ${collection.name} at ${SITE_BRAND} with curated handmade designs, size options, and dependable Cash on Delivery service.`}{" "}
+                Every order is packed for safe nationwide delivery.
+              </>
+            )}
+          </p>
+        </AnimatedSection>
+        <div className="mt-8">
+          <CollectionProductGallery products={products} collectionName={collection.name} />
+        </div>
+      </div>
     </div>
   );
 }

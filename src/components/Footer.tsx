@@ -1,5 +1,7 @@
+import Image from "next/image";
 import Link from "next/link";
 import type { NavLinkItem } from "@/components/Header";
+import { SITE_BRAND } from "@/lib/site";
 
 const WA = "https://wa.me/923315856777";
 
@@ -34,17 +36,16 @@ export function Footer({ categoryLinks }: { categoryLinks: NavLinkItem[] }) {
           <div className="sm:col-span-2 lg:col-span-4">
             <Link
               href="/"
-              className="inline-flex items-center gap-2 font-[var(--font-cormorant)] text-[clamp(1.5rem,3vw,1.875rem)] font-semibold tracking-wide text-[var(--text-on-dark)] no-underline transition-opacity hover:opacity-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[var(--accent)]"
+              className="inline-flex max-w-full items-center no-underline transition-opacity hover:opacity-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[var(--accent)]"
+              aria-label={`${SITE_BRAND} home`}
             >
-              <span
-                className="flex h-6 w-6 items-center justify-center text-[var(--accent-hover)]"
-                aria-hidden
-              >
-                <svg viewBox="0 0 24 24" className="h-5 w-5 fill-current">
-                  <path d="M12 2l1.8 5.4H19l-4.3 3.2 1.6 5.4L12 13l-4.3 3 1.6-5.4L5 7.4h5.2z" />
-                </svg>
-              </span>
-              Artzen
+              <Image
+                src="/Artzens-logo-light.png"
+                alt={SITE_BRAND}
+                width={220}
+                height={64}
+                className="h-12 w-auto max-w-[min(100%,240px)] object-contain object-left sm:h-14"
+              />
             </Link>
             <p className="mt-5 max-w-sm font-[var(--font-dm-sans)] text-[15px] font-normal leading-[1.7] text-[var(--text-on-dark-muted)]">
               Pakistan&apos;s online store for home decor, wall art, gifts, and more.
@@ -62,7 +63,7 @@ export function Footer({ categoryLinks }: { categoryLinks: NavLinkItem[] }) {
             <ul className="mt-5 space-y-3">
               <li>
                 <Link href="/shop" className={linkBase}>
-                  All products
+                  Shop all products
                 </Link>
               </li>
               {categoryLinks.slice(0, 6).map((link) => (
@@ -78,7 +79,7 @@ export function Footer({ categoryLinks }: { categoryLinks: NavLinkItem[] }) {
                     href="/shop"
                     className={`${linkBase} text-[var(--accent-hover)] hover:text-[var(--text-on-dark)]`}
                   >
-                    View all categories →
+                    Explore all collections →
                   </Link>
                 </li>
               )}
@@ -116,6 +117,31 @@ export function Footer({ categoryLinks }: { categoryLinks: NavLinkItem[] }) {
                   Cash on Delivery
                 </Link>
               </li>
+              <li>
+                <Link href="/profile" className={linkBase}>
+                  Profile
+                </Link>
+              </li>
+              <li>
+                <Link href="/shipping-policy" className={linkBase}>
+                  Shipping policy
+                </Link>
+              </li>
+              <li>
+                <Link href="/returns-policy" className={linkBase}>
+                  Returns policy
+                </Link>
+              </li>
+              <li>
+                <Link href="/privacy-policy" className={linkBase}>
+                  Privacy policy
+                </Link>
+              </li>
+              <li>
+                <Link href="/terms" className={linkBase}>
+                  Terms
+                </Link>
+              </li>
             </ul>
           </div>
 
@@ -147,21 +173,31 @@ export function Footer({ categoryLinks }: { categoryLinks: NavLinkItem[] }) {
         <div
           className={`mt-14 flex flex-col items-center justify-between gap-6 border-t ${divider} pt-10 sm:flex-row sm:items-center`}
         >
-          <p className="text-center font-[var(--font-dm-sans)] text-[13px] text-[var(--text-on-dark-muted)] sm:text-left">
-            © {year} Artzen. All rights reserved. Made with care in Pakistan.
+          <p className="max-w-xl text-center font-[var(--font-dm-sans)] text-[13px] leading-relaxed text-[var(--text-on-dark-muted)] sm:text-left">
+            © {year} {SITE_BRAND}. All rights reserved. Made with care in Pakistan. Product photos on
+            this site are for shopping here; please do not reuse them without permission.
           </p>
           <div className="flex flex-wrap items-center justify-center gap-6">
             <Link href="/shop" className={`${linkBase} text-[12px]`}>
-              Shop
+              Shop decor collection
             </Link>
             <Link href="/contact" className={`${linkBase} text-[12px]`}>
-              Contact
+              Contact support
             </Link>
-            <Link href="/cart" className={`${linkBase} text-[12px]`}>
-              Cart
+            <Link href="/guide" className={`${linkBase} text-[12px]`}>
+              Wall art buying guide
             </Link>
-            <Link href="/favorites" className={`${linkBase} text-[12px]`}>
-              Favourites
+            <Link href="/shipping-policy" className={`${linkBase} text-[12px]`}>
+              Shipping
+            </Link>
+            <Link href="/returns-policy" className={`${linkBase} text-[12px]`}>
+              Returns
+            </Link>
+            <Link href="/privacy-policy" className={`${linkBase} text-[12px]`}>
+              Privacy
+            </Link>
+            <Link href="/terms" className={`${linkBase} text-[12px]`}>
+              Terms
             </Link>
           </div>
         </div>

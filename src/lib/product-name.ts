@@ -20,3 +20,18 @@ export function productDisplayName(product: { name: string }): string {
   const cleaned = stripTrailingImageDimensions(product.name);
   return cleaned || product.name.trim();
 }
+
+/** SEO title helper: appends disambiguators to reduce duplicate PDP titles. */
+export function productSeoTitle(product: {
+  name: string;
+  dimensions?: string;
+  collectionSlug?: string;
+}): string {
+  const base = productDisplayName(product);
+  const bits: string[] = [];
+  if (product.dimensions?.trim()) bits.push(product.dimensions.trim());
+  if (product.collectionSlug?.trim()) {
+    bits.push(product.collectionSlug.replace(/-/g, " ").replace(/\b\w/g, (m) => m.toUpperCase()));
+  }
+  return bits.length > 0 ? `${base} - ${bits.join(" | ")}` : base;
+}

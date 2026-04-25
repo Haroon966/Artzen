@@ -1,2 +1,23 @@
+/_next/static/*
+  Cache-Control: public, max-age=31536000, immutable
+
+/images/*
+  Cache-Control: public, max-age=2592000, immutable
+
+/llms.txt
+  Cache-Control: public, max-age=0, must-revalidate
+
+/llms-full.txt
+  Cache-Control: public, max-age=0, must-revalidate
+
 /*
+  Cache-Control: public, max-age=0, must-revalidate
   X-Robots-Tag: index, follow
+/cart/*
+  X-Robots-Tag: noindex, follow
+/checkout/*
+  X-Robots-Tag: noindex, follow
+/profile/*
+  X-Robots-Tag: noindex, follow
+/favorites/*
+  X-Robots-Tag: noindex, follow

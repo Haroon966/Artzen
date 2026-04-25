@@ -1,9 +1,13 @@
 import type { Metadata } from "next";
-import { absoluteUrl, getDefaultShareImagePath, getSiteOrigin } from "@/lib/site";
+import {
+  absoluteUrl,
+  getDefaultShareImagePath,
+  getSiteOrigin,
+  SITE_BRAND,
+} from "@/lib/site";
 
 const origin = getSiteOrigin();
-const description =
-  "Get in touch with Artzen for orders, support, and custom requests. Reach us on WhatsApp from anywhere in Pakistan.";
+const description = `Get in touch with ${SITE_BRAND} for orders, support, and custom requests. Reach us on WhatsApp from anywhere in Pakistan.`;
 const pageUrl = `${origin}/contact`;
 const ogImage = absoluteUrl(getDefaultShareImagePath());
 
@@ -12,14 +16,14 @@ export const metadata: Metadata = {
   description,
   alternates: { canonical: pageUrl },
   openGraph: {
-    title: "Contact | Artzen",
+    title: `Contact | ${SITE_BRAND}`,
     description,
     url: pageUrl,
-    images: [{ url: ogImage, alt: "Contact Artzen" }],
+    images: [{ url: ogImage, alt: `Contact ${SITE_BRAND}` }],
   },
   twitter: {
     card: "summary_large_image",
-    title: "Contact | Artzen",
+    title: `Contact | ${SITE_BRAND}`,
     description,
     images: [ogImage],
   },
@@ -28,7 +32,9 @@ export const metadata: Metadata = {
 export default function ContactPage() {
   return (
     <div className="mx-auto max-w-3xl px-4 py-10 sm:px-6">
-      <h1 className="font-serif text-3xl font-bold text-forest">Contact Us</h1>
+      <h1 className="font-serif text-2xl font-bold text-forest sm:text-3xl">
+        Contact Us
+      </h1>
       <p className="mt-4 text-forest/80">
         We would love to hear from you. For orders, questions, or custom
         requests, reach out on WhatsApp or email.
@@ -39,12 +45,12 @@ export default function ContactPage() {
             WhatsApp
           </h2>
           <a
-            href="https://wa.me/923001234567"
+            href="https://wa.me/923315856777"
             target="_blank"
             rel="noopener noreferrer"
             className="mt-2 inline-block font-medium text-gold hover:underline"
           >
-            +92 300 1234567
+            +92 331 5856777
           </a>
         </div>
         <div>

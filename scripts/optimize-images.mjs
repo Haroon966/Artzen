@@ -4,12 +4,15 @@
  *
  * With next.config `output: "export"` and `images.unoptimized`, file bytes
  * are what the browser downloads — keep sources reasonably sized.
+ *
+ * CI enforces caps in perf/budgets.json (`npm run perf:assets`).
  */
 import fs from "fs";
 import path from "path";
 import sharp from "sharp";
 
 const IMAGES_DIR = path.join(process.cwd(), "public/images");
+/** Keep in sync with `PRODUCT_WEB_IMAGE_MAX_WIDTH` in `src/lib/image-protection.ts`. */
 const MAX_WIDTH = 1400;
 
 const RASTER = new Set([".jpg", ".jpeg", ".png", ".webp"]);

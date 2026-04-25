@@ -9,14 +9,15 @@ export default defineConfig({
   reporter: "list",
   use: {
     ...devices["Desktop Chrome"],
-    baseURL: "http://127.0.0.1:3000",
+    // Dedicated port so `reuseExistingServer` does not attach to an unrelated app on :3000.
+    baseURL: "http://127.0.0.1:4173",
     trace: "on-first-retry",
   },
   webServer: {
-    command: "npm run dev",
-    url: "http://127.0.0.1:3000",
-    // GitHub Actions sets GITHUB_ACTIONS=true; locally reuse avoids port clashes.
+    // Static `out/` avoids `.next/dev/lock` clashes when a local `next dev` is already running.
+    command: "npm run build && npx --yes serve@14 out -l 4173",
+    url: "http://127.0.0.1:4173/shop/",
     reuseExistingServer: process.env.GITHUB_ACTIONS !== "true",
-    timeout: 120_000,
+    timeout: 180_000,
   },
 });

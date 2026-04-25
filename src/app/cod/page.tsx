@@ -1,11 +1,15 @@
 import type { Metadata } from "next";
-import { absoluteUrl, getDefaultShareImagePath, getSiteOrigin } from "@/lib/site";
+import {
+  absoluteUrl,
+  getDefaultShareImagePath,
+  getSiteOrigin,
+  SITE_BRAND,
+} from "@/lib/site";
 import { FaqSection } from "@/components/FaqSection";
 import { codFaqItems, faqPageJsonLd } from "@/lib/faq-content";
 
 const origin = getSiteOrigin();
-const description =
-  "Pay when you receive. Artzen offers Cash on Delivery across Pakistan. No advance payment required.";
+const description = `Pay when you receive. ${SITE_BRAND} offers Cash on Delivery across Pakistan. No advance payment required.`;
 const pageUrl = `${origin}/cod`;
 const ogImage = absoluteUrl(getDefaultShareImagePath());
 
@@ -14,14 +18,14 @@ export const metadata: Metadata = {
   description,
   alternates: { canonical: pageUrl },
   openGraph: {
-    title: "Cash on Delivery | Artzen",
+    title: `Cash on Delivery | ${SITE_BRAND}`,
     description,
     url: pageUrl,
-    images: [{ url: ogImage, alt: "Cash on Delivery across Pakistan at Artzen" }],
+    images: [{ url: ogImage, alt: `Cash on Delivery across Pakistan at ${SITE_BRAND}` }],
   },
   twitter: {
     card: "summary_large_image",
-    title: "Cash on Delivery | Artzen",
+    title: `Cash on Delivery | ${SITE_BRAND}`,
     description,
     images: [ogImage],
   },
@@ -36,7 +40,7 @@ export default function CODPage() {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(faqLd) }}
       />
-      <h1 className="font-serif text-3xl font-bold text-forest">
+      <h1 className="font-serif text-2xl font-bold text-forest sm:text-3xl">
         Cash on Delivery
       </h1>
       <p className="mt-4 text-lg text-forest/80">

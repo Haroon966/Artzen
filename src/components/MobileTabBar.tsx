@@ -1,22 +1,13 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useCart } from "@/context/CartContext";
-import { useMobileNav } from "@/context/MobileNavContext";
 
 const focusRing =
   "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--sage)]";
-
-function HomeIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} aria-hidden>
-      <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" strokeLinecap="round" strokeLinejoin="round" />
-      <polyline points="9 22 9 12 15 12 15 22" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  );
-}
 
 function ShopIcon({ className }: { className?: string }) {
   return (
@@ -46,19 +37,17 @@ function HeartIcon({ className }: { className?: string }) {
   );
 }
 
-function MenuIcon({ className }: { className?: string }) {
+function UserIcon({ className }: { className?: string }) {
   return (
     <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} aria-hidden>
-      <line x1="4" y1="6" x2="20" y2="6" strokeLinecap="round" />
-      <line x1="4" y1="12" x2="20" y2="12" strokeLinecap="round" />
-      <line x1="4" y1="18" x2="20" y2="18" strokeLinecap="round" />
+      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" strokeLinecap="round" strokeLinejoin="round" />
+      <circle cx="12" cy="7" r="4" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   );
 }
 
 export function MobileTabBar() {
   const pathname = usePathname();
-  const { mobileMenuOpen, toggleMobileMenu } = useMobileNav();
   const { totalItems } = useCart();
   const [mounted, setMounted] = useState(false);
 
@@ -74,9 +63,10 @@ export function MobileTabBar() {
   const cartActive =
     pathname.startsWith("/cart") || pathname.startsWith("/checkout");
   const favActive = pathname.startsWith("/favorites");
+  const profileActive = pathname.startsWith("/profile");
 
   const tabClass = (active: boolean) =>
-    `mobile-tab-bar__item relative flex flex-1 flex-col items-center justify-center gap-0.5 py-1 min-h-[44px] min-w-0 rounded-lg transition-opacity duration-150 [-webkit-tap-highlight-color:transparent] ${focusRing} ${
+    `mobile-tab-bar__item relative flex min-w-0 flex-1 flex-col items-center justify-center gap-0.5 py-1 min-h-[44px] rounded-lg transition-opacity duration-150 [-webkit-tap-highlight-color:transparent] ${focusRing} ${
       active ? "mobile-tab-bar__item--active" : "opacity-90 active:opacity-60"
     }`;
 
@@ -91,7 +81,15 @@ export function MobileTabBar() {
         className={`${tabClass(homeActive)} no-underline`}
         aria-current={homeActive ? "page" : undefined}
       >
-        <HomeIcon className="h-[22px] w-[22px] shrink-0" />
+        <span className="inline-flex h-[22px] max-w-[72px] items-center justify-center">
+          <Image
+            src="/Artzens-logo.png"
+            alt=""
+            width={72}
+            height={22}
+            className="h-[22px] w-auto max-w-[72px] object-contain object-center"
+          />
+        </span>
         <span className="font-[var(--font-dm-sans)] text-[10px] font-medium tracking-wide">Home</span>
       </Link>
 
@@ -124,21 +122,21 @@ export function MobileTabBar() {
         aria-current={favActive ? "page" : undefined}
       >
         <HeartIcon className="h-[22px] w-[22px] shrink-0" />
-        <span className="font-[var(--font-dm-sans)] text-[10px] font-medium tracking-wide">Saved</span>
+        <span className="max-w-full truncate font-[var(--font-dm-sans)] text-[10px] font-medium tracking-wide">
+          Saved
+        </span>
       </Link>
 
-      <button
-        type="button"
-        data-mobile-menu-trigger
-        onClick={toggleMobileMenu}
-        className={`${tabClass(mobileMenuOpen)} border-0 bg-transparent p-0`}
-        aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
-        aria-expanded={mobileMenuOpen}
-        aria-controls="mobile-nav-drawer"
+      <Link
+        href="/profile"
+        className={`${tabClass(profileActive)} no-underline`}
+        aria-current={profileActive ? "page" : undefined}
       >
-        <MenuIcon className="h-[22px] w-[22px] shrink-0" />
-        <span className="font-[var(--font-dm-sans)] text-[10px] font-medium tracking-wide">Menu</span>
-      </button>
+        <UserIcon className="h-[22px] w-[22px] shrink-0" />
+        <span className="max-w-full truncate font-[var(--font-dm-sans)] text-[10px] font-medium tracking-wide">
+          Profile
+        </span>
+      </Link>
     </nav>
   );
 }

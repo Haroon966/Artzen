@@ -5,7 +5,8 @@ import { motion, useReducedMotion } from "framer-motion";
 import { useCart } from "@/context/CartContext";
 import type { Product } from "@/lib/data";
 import { productDisplayName } from "@/lib/product-name";
-import { getSiteOrigin } from "@/lib/site";
+import { trackAddToCart } from "@/lib/analytics";
+import { getSiteOrigin, SITE_BRAND } from "@/lib/site";
 
 const WA = "923315856777";
 
@@ -14,18 +15,25 @@ export function AddToCartButton({ product }: { product: Product }) {
   const reduceMotion = useReducedMotion();
 
   const handleAdd = () => {
-    addItem({
+    const payload = {
       id: product.id,
       slug: product.slug,
       name: productDisplayName(product),
       price: product.price,
       image: product.image,
+    };
+    addItem(payload);
+    trackAddToCart({
+      item_id: payload.id,
+      item_name: payload.name,
+      price: payload.price,
+      quantity: 1,
     });
   };
 
   const productUrl = `${getSiteOrigin()}/products/${product.slug}`;
   const waText = encodeURIComponent(
-    `Hi Artzen — I'm interested in: ${productDisplayName(product)}\n${productUrl}`
+    `Hi ${SITE_BRAND} — I'm interested in: ${productDisplayName(product)}\n${productUrl}`
   );
 
   return (

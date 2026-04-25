@@ -2,9 +2,9 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useState, useCallback } from "react";
-import { motion, useReducedMotion } from "framer-motion";
+import { useState, useCallback, memo } from "react";
 import type { Product } from "@/lib/data";
+import type { ShopListProduct } from "@/lib/shop-list-product";
 import {
   getCollection,
   getCollectionDisplayName,
@@ -13,6 +13,12 @@ import {
 import { productDisplayName } from "@/lib/product-name";
 import { useCart } from "@/context/CartContext";
 import { useFavorites } from "@/context/FavoritesContext";
+import { trackAddToCart, trackSelectItem } from "@/lib/analytics";
+import { CatalogImageWatermark } from "@/components/CatalogImageWatermark";
+import {
+  catalogImageProtectClassName,
+  productImageInteractionProps,
+} from "@/lib/image-protection";
 
 const SALE_RED = "#c94444";
 
@@ -20,7 +26,9 @@ function formatPrice(price: number) {
   return `Rs. ${price.toLocaleString("en-PK")}`;
 }
 
-function cartPayload(product: Product) {
+type ProductCardModel = Product | ShopListProduct;
+
+function cartPayload(product: ProductCardModel) {
   return {
     id: product.id,
     slug: product.slug,
@@ -62,8 +70,13 @@ function CheckIcon({ className }: { className?: string }) {
   );
 }
 
-export function ProductCard({ product }: { product: Product }) {
-  const reduceMotion = useReducedMotion();
+function ProductCardInner({
+  product,
+  itemIndex,
+}: {
+  product: ProductCardModel;
+  itemIndex?: number;
+}) {
   const { addItem } = useCart();
   const { toggleFavorite, isFavorite } = useFavorites();
   const [addedFlash, setAddedFlash] = useState(false);
@@ -91,14 +104,21 @@ export function ProductCard({ product }: { product: Product }) {
   const gallery = product.images && product.images.length > 0 ? product.images : [product.image];
   const cardPrimary = product.cardImage || gallery[0] || product.image;
   const cardMockup = product.hoverImage || (gallery.length > 1 ? gallery[1] : null);
-  const showHoverMockup = !reduceMotion && cardMockup != null && cardMockup !== cardPrimary;
+  const showHoverMockup = cardMockup != null && cardMockup !== cardPrimary;
 
   const handleAddCart = useCallback(
     (e: React.MouseEvent) => {
       e.preventDefault();
       e.stopPropagation();
       if (addedFlash) return;
-      addItem(cartPayload(product));
+      const payload = cartPayload(product);
+      addItem(payload);
+      trackAddToCart({
+        item_id: payload.id,
+        item_name: payload.name,
+        price: payload.price,
+        quantity: 1,
+      });
       setAddedFlash(true);
       window.setTimeout(() => setAddedFlash(false), 2000);
     },
@@ -114,15 +134,24 @@ export function ProductCard({ product }: { product: Product }) {
     [toggleFavorite, product.id]
   );
 
+  const handleSelect = useCallback(() => {
+    trackSelectItem({
+      item_id: product.id,
+      item_name: title,
+      price: product.price,
+      index: itemIndex,
+    });
+  }, [product.id, product.price, title, itemIndex]);
+
   return (
-    <motion.article
-      className="product-card group relative flex flex-col overflow-hidden rounded-2xl border border-black/[0.07] bg-white transition-[transform,box-shadow,border-color] duration-300 ease-out hover:border-[var(--golden-earth)]/30 hover:shadow-[0_20px_48px_rgba(44,24,16,0.08)] max-lg:hover:translate-y-0 lg:hover:-translate-y-[5px]"
-      whileTap={reduceMotion ? undefined : { scale: 0.99 }}
+    <article
+      className="product-card group relative flex flex-col overflow-hidden rounded-2xl border border-solid border-[color:rgba(30,40,50,0.22)] bg-white transition-[transform,box-shadow,border-color] duration-300 ease-out hover:border-[color:rgba(125,170,138,0.45)] hover:shadow-[0_20px_48px_rgba(44,24,16,0.08)] max-lg:hover:translate-y-0 lg:hover:-translate-y-[5px]"
     >
       <div className="relative aspect-square overflow-hidden bg-[#f0ece3]">
         <Link
           href={href}
-          className="relative block h-full w-full"
+          onClick={handleSelect}
+          className={`relative block h-full w-full ${catalogImageProtectClassName}`}
           aria-label={`View ${title}`}
         >
           {showHoverMockup ? (
@@ -132,16 +161,16 @@ export function ProductCard({ product }: { product: Product }) {
                 alt={title}
                 fill
                 className="object-contain object-top px-0 pt-2 pb-2 transition-opacity duration-500 ease-out group-hover:opacity-0"
-                sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 280px"
-                unoptimized
+                sizes="(max-width: 640px) min(50vw, 1400px), (max-width: 1024px) min(33vw, 1400px), min(280px, 1400px)"
+                {...productImageInteractionProps}
               />
               <Image
                 src={cardMockup}
                 alt=""
                 fill
                 className="object-cover object-center opacity-0 transition-opacity duration-500 ease-out group-hover:opacity-100"
-                sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 280px"
-                unoptimized
+                sizes="(max-width: 640px) min(50vw, 1400px), (max-width: 1024px) min(33vw, 1400px), min(280px, 1400px)"
+                {...productImageInteractionProps}
               />
             </>
           ) : (
@@ -150,22 +179,23 @@ export function ProductCard({ product }: { product: Product }) {
               alt={title}
               fill
               className="object-contain object-top px-0 pt-2 pb-2"
-              sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 280px"
-              unoptimized
+              sizes="(max-width: 640px) min(50vw, 1400px), (max-width: 1024px) min(33vw, 1400px), min(280px, 1400px)"
+              {...productImageInteractionProps}
             />
           )}
         </Link>
+        <CatalogImageWatermark variant="card" />
 
         {onSale && (
           <span
-            className="pointer-events-none absolute left-3 top-3 rounded-full px-2.5 py-1 font-[var(--font-dm-sans)] text-[10px] font-semibold uppercase tracking-[0.06em] text-white shadow-sm"
+            className="pointer-events-none absolute left-3 top-3 z-[3] rounded-full px-2.5 py-1 font-[var(--font-dm-sans)] text-[10px] font-semibold uppercase tracking-[0.06em] text-white shadow-sm"
             style={{ backgroundColor: SALE_RED }}
           >
             Sale
           </span>
         )}
         {showNew && !onSale && (
-          <span className="pointer-events-none absolute left-3 top-3 rounded-full bg-[var(--golden-earth)] px-2.5 py-1 font-[var(--font-dm-sans)] text-[10px] font-semibold uppercase tracking-[0.06em] text-coffee-bean">
+          <span className="pointer-events-none absolute left-3 top-3 z-[3] rounded-full bg-[var(--golden-earth)] px-2.5 py-1 font-[var(--font-dm-sans)] text-[10px] font-semibold uppercase tracking-[0.06em] text-coffee-bean">
             New
           </span>
         )}
@@ -173,7 +203,7 @@ export function ProductCard({ product }: { product: Product }) {
         <button
           type="button"
           onClick={handleFav}
-          className={`absolute right-2.5 top-2.5 z-[2] flex h-11 w-11 max-md:h-11 max-md:w-11 items-center justify-center rounded-full border-0 bg-white/90 shadow-sm transition-[opacity,transform,background-color] duration-250 max-lg:translate-y-0 max-lg:opacity-100 lg:h-[34px] lg:w-[34px] lg:-translate-y-1 lg:opacity-0 lg:group-hover:translate-y-0 lg:group-hover:opacity-100 ${
+          className={`absolute right-2.5 top-2.5 z-[4] flex h-11 w-11 max-md:h-11 max-md:w-11 items-center justify-center rounded-full border-0 bg-white/90 shadow-sm transition-[opacity,transform,background-color] duration-250 max-lg:translate-y-0 max-lg:opacity-100 lg:h-[34px] lg:w-[34px] lg:-translate-y-1 lg:opacity-0 lg:group-hover:translate-y-0 lg:group-hover:opacity-100 ${
             fav ? "lg:opacity-100 lg:translate-y-0" : ""
           } hover:bg-white`}
           aria-label={fav ? "Remove from favorites" : "Add to favorites"}
@@ -195,7 +225,7 @@ export function ProductCard({ product }: { product: Product }) {
           type="button"
           onClick={handleAddCart}
           disabled={addedFlash}
-          className={`absolute bottom-0 left-0 right-0 z-[1] flex h-11 items-center justify-center gap-2 font-[var(--font-dm-sans)] text-[13px] font-medium text-white transition-[transform,background-color] duration-300 ease-out max-lg:translate-y-0 lg:translate-y-full lg:group-hover:translate-y-0 ${
+          className={`absolute bottom-0 left-0 right-0 z-[3] flex h-11 items-center justify-center gap-2 font-[var(--font-dm-sans)] text-[13px] font-medium text-white transition-[transform,background-color] duration-300 ease-out max-lg:translate-y-0 lg:translate-y-full lg:group-hover:translate-y-0 ${
             addedFlash ? "bg-[#2d6a4f] lg:translate-y-0" : "bg-coffee-bean hover:bg-coffee-hover"
           }`}
           aria-label={addedFlash ? "Added to cart" : "Add to cart"}
@@ -217,11 +247,12 @@ export function ProductCard({ product }: { product: Product }) {
       <div className="flex flex-1 flex-col px-4 pb-[18px] pt-3.5">
         <Link
           href={href}
+          onClick={handleSelect}
           className="mb-1 font-[var(--font-dm-sans)] text-[10.5px] font-medium uppercase tracking-[0.08em] text-[var(--golden-earth)] no-underline line-clamp-1 hover:underline"
         >
           {categoryLabel}
         </Link>
-        <Link href={href} className="no-underline">
+        <Link href={href} onClick={handleSelect} className="no-underline">
           <h3 className="mb-2.5 line-clamp-2 font-[var(--font-cormorant)] text-[18px] font-semibold leading-snug text-coffee-bean transition-colors hover:text-[var(--golden-earth)]">
             {title}
           </h3>
@@ -251,6 +282,10 @@ export function ProductCard({ product }: { product: Product }) {
           )}
         </div>
       </div>
-    </motion.article>
+    </article>
   );
 }
+
+ProductCardInner.displayName = "ProductCard";
+
+export const ProductCard = memo(ProductCardInner);

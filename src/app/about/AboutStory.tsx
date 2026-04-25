@@ -3,6 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { AnimatedSection } from "@/components/AnimatedSection";
+import { SITE_BRAND } from "@/lib/site";
 
 const values = [
   {
@@ -51,7 +52,7 @@ export function AboutStory() {
         <div className="relative mx-auto max-w-6xl px-4 sm:px-6">
           <AnimatedSection as="div" className="max-w-4xl">
             <p className="font-[var(--font-dm-sans)] text-[11px] font-medium uppercase tracking-[0.32em] text-[var(--gold)]">
-              About Artzen
+              About {SITE_BRAND}
             </p>
             <h1 className="mt-4 font-[var(--font-cormorant)] text-[clamp(2.75rem,8vw,4.75rem)] font-semibold leading-[1.02] tracking-tight text-[var(--dark)]">
               Your store,
@@ -84,7 +85,7 @@ export function AboutStory() {
               &ldquo;Every piece should quiet the room — and remind you why you chose it.&rdquo;
             </blockquote>
             <p className="mt-6 font-[var(--font-dm-sans)] text-[11px] font-medium uppercase tracking-[0.28em] text-[var(--gold)]">
-              — The Artzen standard
+              — The {SITE_BRAND} standard
             </p>
           </AnimatedSection>
         </div>
@@ -126,14 +127,14 @@ export function AboutStory() {
             </AnimatedSection>
             <AnimatedSection as="div" className="mt-8 space-y-6" delay={0.08}>
               <p className="font-[var(--font-dm-sans)] text-[15px] font-light leading-[1.75] text-muted">
-                Artzen grew from wanting a single place to find{" "}
+                {SITE_BRAND} grew from wanting a single place to find{" "}
                 <strong className="font-medium text-[var(--dark)]">things you actually want</strong> —
                 wall art, personalized gifts, decor, and more — with the same care whether it ships to
                 Lahore or Karachi.
               </p>
               <p className="font-[var(--font-dm-sans)] text-[15px] font-light leading-[1.75] text-muted">
                 Islamic calligraphy and spiritual pieces remain a proud part of our catalogue. You will
-                also find decorative wall art, keychains, and other categories as we grow — always with
+                also find decorative wall art and other categories as we grow — always with
                 quality and packaging we stand behind.
               </p>
               <p className="font-[var(--font-dm-sans)] text-[15px] font-light leading-[1.75] text-muted">

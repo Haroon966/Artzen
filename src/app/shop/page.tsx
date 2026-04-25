@@ -2,58 +2,53 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import {
   absoluteUrl,
+  canonicalUrl,
   getDefaultShareImagePath,
-  getSiteOrigin,
+  SITE_BRAND,
 } from "@/lib/site";
 import { clipMetaDescription } from "@/lib/seo";
 import { Suspense } from "react";
-import {
-  getServerNavCategoryLinks,
-  getServerProducts,
-  getServerShopCategoryFilters,
-} from "@/lib/catalog-server";
+import { getServerShopPageData } from "@/lib/catalog-server";
 import { ShopShellClient } from "./ShopShellClient";
 
-const shopDescRaw =
-  "Browse Artzen — wall art, Islamic calligraphy, gifts, decor, and more. Cash on Delivery across Pakistan.";
+const shopDescRaw = `Browse ${SITE_BRAND} — wall art, Islamic calligraphy, gifts, decor, and more. Cash on Delivery across Pakistan.`;
 const shopDesc = clipMetaDescription(shopDescRaw);
-const origin = getSiteOrigin();
 const shopOg = absoluteUrl(getDefaultShareImagePath());
 
-export const metadata: Metadata = {
-  title: "Shop all products",
-  description: shopDesc,
-  alternates: { canonical: `${origin}/shop` },
-  openGraph: {
+export function generateMetadata(): Metadata {
+  return {
     title: "Shop all products",
     description: shopDesc,
-    url: `${origin}/shop`,
-    images: [{ url: shopOg, alt: "Artzen shop" }],
-  },
-  twitter: {
-    card: "summary_large_image",
-    title: "Shop all products",
-    description: shopDesc,
-    images: [shopOg],
-  },
-};
+    alternates: { canonical: canonicalUrl("/shop") },
+    robots: { index: true, follow: true },
+    openGraph: {
+      title: "Shop all products",
+      description: shopDesc,
+      url: canonicalUrl("/shop"),
+      images: [{ url: shopOg, alt: `${SITE_BRAND} shop` }],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: "Shop all products",
+      description: shopDesc,
+      images: [shopOg],
+    },
+  };
+}
 
 export default async function ShopPage() {
-  const products = await getServerProducts();
-  const count = products.length;
-  const categoryLinks = await getServerNavCategoryLinks();
-  const categoryFilters = await getServerShopCategoryFilters();
+  const { shopProducts, count, categoryLinks, facetSummary } = await getServerShopPageData();
 
   return (
     <div className="min-h-screen bg-cream-deep">
       <Suspense
         fallback={
-          <section className="mx-auto max-w-7xl px-4 py-12 sm:px-6 sm:py-16">
+          <section className="w-full px-4 py-12 sm:px-6 sm:py-16 lg:px-10 xl:px-14 2xl:px-16">
             <h1 className="font-[var(--font-cormorant)] text-4xl font-semibold text-[var(--dark)]">
               Shop all products
             </h1>
             <p className="mt-3 max-w-2xl font-[var(--font-dm-sans)] text-[15px] text-muted">
-              Browse wall art, calligraphy, gifts, and decor. Artzen delivers
+              Browse wall art, calligraphy, gifts, and decor. {SITE_BRAND} delivers
               across Pakistan with Cash on Delivery.
             </p>
             <p className="mt-3 font-[var(--font-dm-sans)] text-sm text-[var(--dark)]/70">
@@ -74,10 +69,9 @@ export default async function ShopPage() {
         }
       >
         <ShopShellClient
-          products={products}
-          productCount={count}
+          shopProducts={shopProducts}
+          facetSummary={facetSummary}
           categoryLinks={categoryLinks}
-          categoryFilters={categoryFilters}
         />
       </Suspense>
     </div>

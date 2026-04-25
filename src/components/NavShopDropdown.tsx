@@ -8,7 +8,6 @@ const shopLinks = [
   { href: "/collections/wall-decoration", label: "Wall Decoration" },
   { href: "/collections/vintage-logo", label: "Vintage Logo" },
   { href: "/collections/premium-islamic-art-collection", label: "Premium Islamic Art" },
-  { href: "/collections/customize-keychain", label: "Customize Keychain" },
   { href: "/shop", label: "View All Products" },
 ];
 

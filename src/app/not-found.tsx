@@ -1,12 +1,12 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { getSiteOrigin } from "@/lib/site";
+import { getSiteOrigin, SITE_BRAND } from "@/lib/site";
 
 const origin = getSiteOrigin();
 
 export const metadata: Metadata = {
   title: "Page Not Found",
-  description: "The page you are looking for could not be found on Artzen.",
+  description: `The page you are looking for could not be found on ${SITE_BRAND}.`,
   robots: {
     index: false,
     follow: false,

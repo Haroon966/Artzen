@@ -1,3 +1,6 @@
+/** Customer-facing brand (matches logo and Artzens.com). */
+export const SITE_BRAND = "Artzens";
+
 /** Canonical site origin for product URLs in orders (no trailing slash). */
 export function getSiteOrigin(): string {
   const url = process.env.NEXT_PUBLIC_SITE_URL?.trim();
@@ -10,6 +13,15 @@ export function absoluteUrl(path: string): string {
   const origin = getSiteOrigin();
   const p = path.startsWith("/") ? path : `/${path}`;
   return `${origin}${p}`;
+}
+
+/** Canonical absolute URL using trailing-slash route style (except home). */
+export function canonicalUrl(path: string): string {
+  const origin = getSiteOrigin();
+  if (!path || path === "/") return `${origin}/`;
+  if (path.includes("?")) return `${origin}${path.startsWith("/") ? path : `/${path}`}`;
+  const p = path.startsWith("/") ? path : `/${path}`;
+  return p.endsWith("/") ? `${origin}${p}` : `${origin}${p}/`;
 }
 
 /** Default Open Graph / schema image (committed raster under public/). */
@@ -63,5 +75,5 @@ export function whatsAppOrderLink(message: string): string {
     }
     m = m.slice(0, Math.max(50, Math.floor(m.length * 0.75))).trimEnd() + tail;
   }
-  return `${prefix}${encodeURIComponent("Hi Artzen — I'd like to place an order.")}`;
+  return `${prefix}${encodeURIComponent(`Hi ${SITE_BRAND} — I'd like to place an order.`)}`;
 }

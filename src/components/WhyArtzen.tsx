@@ -1,6 +1,7 @@
 "use client";
 
 import { motion, useReducedMotion } from "framer-motion";
+import { SITE_BRAND } from "@/lib/site";
 
 const pillars = [
   {
@@ -79,7 +80,7 @@ export function WhyArtzen() {
             transition={{ duration: 0.45 }}
             className="font-[var(--font-dm-sans)] text-[11px] font-medium uppercase tracking-[0.28em] text-[var(--gold)]"
           >
-            The Artzen difference
+            The {SITE_BRAND} difference
           </motion.p>
           <motion.h2
             initial={reduceMotion ? false : { opacity: 0, y: 16 }}
@@ -89,7 +90,7 @@ export function WhyArtzen() {
             className="mt-3 font-[var(--font-cormorant)] text-[clamp(2rem,4.5vw,3.25rem)] font-semibold leading-[1.12] tracking-tight text-cream-soft"
           >
             Why homes across Pakistan{" "}
-            <span className="text-[var(--gold)]">choose Artzen</span>
+            <span className="text-[var(--gold)]">choose {SITE_BRAND}</span>
           </motion.h2>
           <motion.p
             initial={reduceMotion ? false : { opacity: 0 }}

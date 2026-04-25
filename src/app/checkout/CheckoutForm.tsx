@@ -1,12 +1,60 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import {
+  isSubmissionError,
+  type FieldValues,
+  type SubmissionError,
+} from "@formspree/core";
+import { useSubmit } from "@formspree/react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useCart } from "@/context/CartContext";
-import { getSiteOrigin, whatsAppOrderLink } from "@/lib/site";
+import {
+  trackBeginCheckout,
+  trackCheckoutFormStarted,
+  trackCheckoutSubmitAttempt,
+  trackCheckoutSubmitFailed,
+  trackCheckoutValidationError,
+  trackPurchase,
+  trackWhatsAppFallbackClicked,
+  trackWhatsAppOpenAttempt,
+} from "@/lib/analytics";
+import {
+  getLastSavedCustomerForCheckout,
+  saveCheckoutDeliveryToLocalStorage,
+  saveOrderToHistory,
+  type StoredOrderHistoryLine,
+} from "@/lib/order-history-db";
+import { getSiteOrigin, SITE_BRAND, whatsAppOrderLink } from "@/lib/site";
 
-const FORMSPREE_ID = process.env.NEXT_PUBLIC_FORMSPREE_ID || "";
+/** Formspree form key (the ID in https://formspree.io/f/…). Override with NEXT_PUBLIC_FORMSPREE_ID if needed. */
+const FORMSPREE_FORM_ID =
+  process.env.NEXT_PUBLIC_FORMSPREE_ID?.trim() || "xeepwlnq";
 const LAST_ORDER_KEY = "artzen-last-order";
+const PAKISTAN_CITIES = [
+  "Karachi",
+  "Lahore",
+  "Islamabad",
+  "Rawalpindi",
+  "Faisalabad",
+  "Multan",
+  "Peshawar",
+  "Quetta",
+  "Hyderabad",
+  "Sialkot",
+] as const;
+const DELIVERY_ESTIMATES: Record<string, string> = {
+  karachi: "Rs. 250-350",
+  lahore: "Rs. 250-350",
+  islamabad: "Rs. 300-400",
+  rawalpindi: "Rs. 300-400",
+  faisalabad: "Rs. 300-420",
+  multan: "Rs. 320-450",
+  peshawar: "Rs. 350-500",
+  quetta: "Rs. 400-600",
+  hyderabad: "Rs. 280-380",
+  sialkot: "Rs. 300-420",
+};
 
 function formatPrice(price: number) {
   return `Rs. ${price.toLocaleString("en-PK")}`;
@@ -37,7 +85,7 @@ type SuccessDetails = {
 function buildWhatsAppMessage(details: SuccessDetails): string {
   const { orderRef, formData, orderSummaryText, totalFormatted } = details;
   const lines = [
-    `Artzen order ${orderRef}`,
+    `${SITE_BRAND} order ${orderRef}`,
     "",
     `Name: ${formData.name}`,
     `Phone: ${formData.phone}`,
@@ -51,6 +99,12 @@ function buildWhatsAppMessage(details: SuccessDetails): string {
 
 function digitsOnly(s: string): string {
   return s.replace(/\D/g, "");
+}
+
+function deliveryEstimateForCity(city: string): string {
+  if (!city.trim()) return "Usually Rs. 250-450 for major cities";
+  const normalized = city.trim().toLowerCase();
+  return DELIVERY_ESTIMATES[normalized] ?? "Usually Rs. 300-550 (final courier rate varies)";
 }
 
 function validateCheckoutFields(data: SuccessDetails["formData"]): Record<string, string> {
@@ -90,6 +144,26 @@ function buildOrderSummaryFromItems(
     .join("\n");
 }
 
+/** When Formspree fails, still lets the customer send cart + address on WhatsApp. */
+function buildManualWhatsAppMessage(
+  formData: SuccessDetails["formData"],
+  items: { name: string; quantity: number; price: number }[],
+  totalPrice: number
+): string {
+  const orderSummary = buildOrderSummaryFromItems(items);
+  const lines = [
+    `${SITE_BRAND} order (website form could not send — please confirm manually)`,
+    "",
+    `Name: ${formData.name}`,
+    `Phone: ${formData.phone}`,
+    `City: ${formData.city}`,
+    `Address: ${formData.address}`,
+  ];
+  if (formData.notes.trim()) lines.push(`Notes: ${formData.notes.trim()}`);
+  lines.push("", "Items:", orderSummary, "", `Total: ${formatPrice(totalPrice)}`);
+  return lines.join("\n");
+}
+
 function escapeHtml(s: string): string {
   return s
     .replace(/&/g, "&amp;")
@@ -98,7 +172,34 @@ function escapeHtml(s: string): string {
     .replace(/"/g, "&quot;");
 }
 
+function formatFormspreeErrors(err: SubmissionError<FieldValues>): string {
+  const parts: string[] = err.getFormErrors().map((e) => e.message);
+  for (const [field, fieldErrs] of err.getAllFieldErrors()) {
+    for (const fe of fieldErrs) {
+      parts.push(`${String(field)}: ${fe.message}`);
+    }
+  }
+  return parts.join(" ") || "Submission failed.";
+}
+
+function isDeliveryEmpty(data: {
+  name: string;
+  phone: string;
+  city: string;
+  address: string;
+  notes: string;
+}): boolean {
+  return (
+    !data.name.trim() &&
+    !data.phone.trim() &&
+    !data.city.trim() &&
+    !data.address.trim() &&
+    !data.notes.trim()
+  );
+}
+
 export function CheckoutForm() {
+  const submitOrder = useSubmit(FORMSPREE_FORM_ID);
   const { items, totalPrice, clearCart } = useCart();
   const [status, setStatus] = useState<"idle" | "sending" | "success" | "error">(
     "idle"
@@ -116,13 +217,42 @@ export function CheckoutForm() {
     notes: "",
   });
   const [copyFeedback, setCopyFeedback] = useState(false);
+  const [whatsAppOpened, setWhatsAppOpened] = useState(false);
   const copyResetRef = useRef<number | null>(null);
+  const beginCheckoutTracked = useRef(false);
+  const formStartedTracked = useRef(false);
 
   useEffect(() => {
     return () => {
       if (copyResetRef.current) window.clearTimeout(copyResetRef.current);
     };
   }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    void getLastSavedCustomerForCheckout().then((saved) => {
+      if (cancelled || !saved) return;
+      setFormData((prev) => {
+        if (!isDeliveryEmpty(prev)) return prev;
+        return {
+          name: saved.name,
+          phone: saved.phone,
+          city: saved.city,
+          address: saved.address,
+          notes: saved.notes,
+        };
+      });
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (items.length === 0 || beginCheckoutTracked.current) return;
+    beginCheckoutTracked.current = true;
+    trackBeginCheckout(items, totalPrice);
+  }, [items, totalPrice]);
 
   useEffect(() => {
     if (status !== "success" || !successDetails) return;
@@ -144,6 +274,10 @@ export function CheckoutForm() {
     setFieldErrors(errors);
     const ok = Object.keys(errors).length === 0;
     if (!ok) {
+      for (const [field, message] of Object.entries(errors)) {
+        trackCheckoutValidationError(field, message);
+      }
+      trackCheckoutSubmitFailed("validation");
       queueMicrotask(() => {
         const order = ["name", "phone", "city", "address"] as const;
         for (const id of order) {
@@ -151,7 +285,8 @@ export function CheckoutForm() {
           const el = document.getElementById(id);
           if (el) {
             el.focus();
-            el.scrollIntoView({ behavior: "smooth", block: "center" });
+            const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+            el.scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth", block: "center" });
           }
           break;
         }
@@ -168,53 +303,19 @@ export function CheckoutForm() {
     clearCart();
   };
 
-  const submitViaWhatsApp = () => {
-    setErrorDetail(null);
-    if (items.length === 0) {
-      setStatus("error");
-      setErrorDetail("Your cart is empty.");
-      return;
-    }
-    if (!runValidation()) {
-      setStatus("idle");
-      return;
-    }
-    const orderRef = generateOrderRef();
-    const orderSummary = buildOrderSummaryFromItems(items);
-    const totalFormatted = formatPrice(totalPrice);
-    applySuccess({
-      orderRef,
-      formData: { ...formData },
-      orderSummaryText: orderSummary,
-      totalFormatted,
-    });
-    const href = whatsAppOrderLink(
-      buildWhatsAppMessage({
-        orderRef,
-        formData: { ...formData },
-        orderSummaryText: orderSummary,
-        totalFormatted,
-      })
-    );
-    window.open(href, "_blank", "noopener,noreferrer");
-  };
+  type EmailOutcome =
+    | {
+        ok: true;
+        orderRef: string;
+        orderSummaryText: string;
+        totalFormatted: string;
+      }
+    | { ok: false; reason: "network" }
+    | { ok: false; reason: "formspree"; detail: string };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setErrorDetail(null);
-    if (!runValidation()) {
-      return;
-    }
-    if (items.length === 0) {
-      setStatus("error");
-      setErrorDetail("Your cart is empty.");
-      return;
-    }
-
-    setStatus("sending");
+  const sendOrderEmail = useCallback(async (): Promise<EmailOutcome> => {
     const orderRef = generateOrderRef();
     const origin = getSiteOrigin();
-
     const orderLines = items.map((i) => {
       const lineTotal = i.price * i.quantity;
       return {
@@ -227,71 +328,114 @@ export function CheckoutForm() {
         product_url: `${origin}/products/${encodeURIComponent(i.slug)}`,
       };
     });
-
     const orderSummary = buildOrderSummaryFromItems(items);
     const orderLinesJson = JSON.stringify(orderLines, null, 0);
     const totalFormatted = formatPrice(totalPrice);
 
-    const persisted = false;
-
-    let formspreeOk = !FORMSPREE_ID;
-    if (FORMSPREE_ID) {
-      try {
-        const res = await fetch(`https://formspree.io/f/${FORMSPREE_ID}`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            ...formData,
-            order_ref: orderRef,
-            order: orderSummary,
-            order_lines_json: orderLinesJson,
-            total: totalFormatted,
-            _subject: `Artzen order ${orderRef} — ${formData.name}`,
-          }),
-        });
-        formspreeOk = res.ok;
-        if (!res.ok) {
-          const code = res.status;
-          let hint = "";
-          if (code === 422) {
-            hint =
-              " The form may be misconfigured in Formspree (e.g. required fields).";
-          } else if (code >= 500) {
-            hint = " Formspree may be temporarily unavailable.";
-          }
-          if (!persisted) {
-            setStatus("error");
-            setErrorDetail(
-              `We could not send your order (HTTP ${code}).${hint} Please try again in a moment or send your order via WhatsApp below.`
-            );
-            return;
-          }
-        }
-      } catch {
-        if (!persisted) {
-          setStatus("error");
-          setErrorDetail(
-            "Network error — check your connection and try again, or contact us on WhatsApp."
-          );
-          return;
-        }
-      }
+    let result;
+    try {
+      result = await submitOrder({
+        name: formData.name,
+        phone: formData.phone,
+        city: formData.city,
+        address: formData.address,
+        notes: formData.notes,
+        order_ref: orderRef,
+        order: orderSummary,
+        order_lines_json: orderLinesJson,
+        total: totalFormatted,
+        _subject: `${SITE_BRAND} order ${orderRef} — ${formData.name}`,
+      });
+    } catch {
+      return { ok: false, reason: "network" };
     }
 
-    if (!persisted && !formspreeOk) {
-      setStatus("error");
+    if (isSubmissionError(result)) {
+      return {
+        ok: false,
+        reason: "formspree",
+        detail: formatFormspreeErrors(result),
+      };
+    }
+
+    return {
+      ok: true,
+      orderRef,
+      orderSummaryText: orderSummary,
+      totalFormatted,
+    };
+  }, [items, formData, totalPrice, submitOrder]);
+
+  const applyEmailFailure = (outcome: Extract<EmailOutcome, { ok: false }>) => {
+    setStatus("error");
+    if (outcome.reason === "network") {
       setErrorDetail(
-        "Orders are not configured: set NEXT_PUBLIC_FORMSPREE_ID, or send your order on WhatsApp."
+        "Network error — check your connection and try again, or contact us on WhatsApp."
       );
+    } else {
+      setErrorDetail(
+        `${outcome.detail} Please try again in a moment or contact us on WhatsApp.`
+      );
+    }
+  };
+
+  const submitWithWhatsAppConfirmation = async () => {
+    setErrorDetail(null);
+    if (items.length === 0) {
+      setStatus("error");
+      setErrorDetail("Your cart is empty.");
+      trackCheckoutSubmitFailed("empty_cart");
+      return;
+    }
+    if (!runValidation()) {
+      setStatus("idle");
       return;
     }
 
+    setStatus("sending");
+    trackCheckoutSubmitAttempt(items, totalPrice);
+    const outcome = await sendOrderEmail();
+    if (!outcome.ok) {
+      applyEmailFailure(outcome);
+      trackCheckoutSubmitFailed(outcome.reason);
+      return;
+    }
+
+    trackPurchase(outcome.orderRef, items, totalPrice);
     applySuccess({
-      orderRef,
+      orderRef: outcome.orderRef,
       formData: { ...formData },
-      orderSummaryText: orderSummary,
-      totalFormatted,
+      orderSummaryText: outcome.orderSummaryText,
+      totalFormatted: outcome.totalFormatted,
     });
+
+    const historyItems: StoredOrderHistoryLine[] = items.map((i) => ({
+      id: i.id,
+      slug: i.slug,
+      name: i.name,
+      quantity: i.quantity,
+      unitPrice: i.price,
+      lineTotal: i.price * i.quantity,
+    }));
+    const customerSnapshot = { ...formData };
+    saveCheckoutDeliveryToLocalStorage(customerSnapshot);
+    void saveOrderToHistory({
+      orderRef: outcome.orderRef,
+      createdAt: new Date().toISOString(),
+      customer: customerSnapshot,
+      items: historyItems,
+      totalFormatted: outcome.totalFormatted,
+      totalNumeric: totalPrice,
+    }).catch(() => {
+      // Non-blocking: checkout must succeed even if IndexedDB is unavailable
+    });
+
+    setWhatsAppOpened(false);
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    await submitWithWhatsAppConfirmation();
   };
 
   const copyOrderRef = async (ref: string) => {
@@ -309,7 +453,7 @@ export function CheckoutForm() {
     const w = window.open("", "_blank");
     if (!w) return;
     const body = [
-      "<html><head><title>Artzen order ",
+      `<html><head><title>${SITE_BRAND} order `,
       details.orderRef,
       "</title></head><body style='font-family:sans-serif;padding:24px'>",
       "<h1>Order ",
@@ -353,7 +497,9 @@ export function CheckoutForm() {
         <p className="mt-4 text-sm text-forest/60">
           Need help?{" "}
           <a
-            href={whatsAppOrderLink("Hi Artzen — I have a question before I order.")}
+            href={whatsAppOrderLink(
+              `Hi ${SITE_BRAND} — I have a question before I order.`
+            )}
             className="font-medium text-forest underline hover:text-forest/90"
             target="_blank"
             rel="noopener noreferrer"
@@ -369,23 +515,31 @@ export function CheckoutForm() {
     const waHref = whatsAppOrderLink(buildWhatsAppMessage(successDetails));
     return (
       <div className="mt-8 space-y-6">
-        <div
-          className="rounded-lg border border-emerald-900/15 bg-emerald-50/40 p-8"
-          role="status"
-          aria-live="polite"
-        >
+        <div className="rounded-lg border border-emerald-900/15 bg-emerald-50/40 p-8" role="status" aria-live="polite">
           <h2 className="text-center font-serif text-xl font-semibold text-forest">
             Order received
           </h2>
-          <p className="mt-3 text-center font-mono text-lg font-semibold tracking-wide text-forest">
+          <p className="mt-4 text-center text-sm font-semibold uppercase tracking-wide text-forest/90">
+            Your order reference
+          </p>
+          <p className="mt-1 text-center font-mono text-xl font-semibold tracking-wide text-forest sm:text-2xl">
             {successDetails.orderRef}
           </p>
           <p className="mt-2 text-center text-sm text-forest/80">
-            Save this reference if you contact us about your order.
+            Quote this reference in WhatsApp so we can match your order quickly.
+          </p>
+          <p className="mt-3 text-center text-sm text-forest/75">
+            Your order is confirmed on the website. Share your reference on WhatsApp for faster
+            updates and delivery confirmation.
           </p>
           <p className="sr-only" aria-live="polite">
             {copyFeedback ? "Order reference copied to clipboard." : ""}
           </p>
+          {copyFeedback ? (
+            <p className="mt-2 text-center text-xs font-medium text-emerald-800" role="status">
+              Reference copied — paste it in WhatsApp if needed.
+            </p>
+          ) : null}
           <div className="mt-4 flex flex-wrap justify-center gap-2">
             <button
               type="button"
@@ -403,74 +557,43 @@ export function CheckoutForm() {
             </button>
           </div>
 
-          <ol className="mx-auto mt-8 max-w-md list-none space-y-4 p-0 text-left text-sm text-forest/90">
-            <li className="flex gap-3">
-              <span
-                className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-emerald-700 text-xs font-bold text-white"
-                aria-hidden
-              >
-                1
-              </span>
-              <div>
-                <p className="font-semibold text-forest">Order placed</p>
-                <p className="text-forest/75">
-                  We have your delivery details and cart summary.
-                </p>
-              </div>
-            </li>
-            <li className="flex gap-3">
-              <span
-                className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-forest/15 text-xs font-bold text-forest"
-                aria-hidden
-              >
-                2
-              </span>
-              <div>
-                <p className="font-semibold text-forest">Confirmation</p>
-                <p className="text-forest/75">
-                  Our team confirms availability and delivery — usually within 1–2
-                  business days.
-                </p>
-              </div>
-            </li>
-            <li className="flex gap-3">
-              <span
-                className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-forest/15 text-xs font-bold text-forest"
-                aria-hidden
-              >
-                3
-              </span>
-              <div>
-                <p className="font-semibold text-forest">Packed &amp; shipped</p>
-                <p className="text-forest/75">
-                  Your order is packed carefully and sent to your address.
-                </p>
-              </div>
-            </li>
-            <li className="flex gap-3">
-              <span
-                className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-forest/15 text-xs font-bold text-forest"
-                aria-hidden
-              >
-                4
-              </span>
-              <div>
-                <p className="font-semibold text-forest">Pay on delivery</p>
-                <p className="text-forest/75">
-                  <strong>Cash on Delivery</strong> — pay the courier when your
-                  parcel arrives.
-                </p>
-              </div>
-            </li>
-          </ol>
-
           <p className="mt-6 text-center text-sm text-forest/70">
-            Questions anytime? Message us on WhatsApp — include your order reference.
+            Questions about delivery fees or timelines? See{" "}
+            <Link
+              href="/cod"
+              className="font-medium text-forest underline underline-offset-2 hover:text-forest/90"
+            >
+              Cash on Delivery
+            </Link>
+            ,{" "}
+            <Link
+              href="/shipping-policy"
+              className="font-medium text-forest underline underline-offset-2 hover:text-forest/90"
+            >
+              Shipping policy
+            </Link>
+            , and{" "}
+            <Link
+              href="/returns-policy"
+              className="font-medium text-forest underline underline-offset-2 hover:text-forest/90"
+            >
+              Returns policy
+            </Link>
+            .
           </p>
+          {whatsAppOpened ? (
+            <p className="mt-2 text-center text-xs text-forest/65">
+              WhatsApp opened. If it did not launch, use the button below any time.
+            </p>
+          ) : null}
         </div>
         <div className="flex flex-col items-stretch gap-3 sm:flex-row sm:justify-center">
           <a
             href={waHref}
+            onClick={() => {
+              trackWhatsAppOpenAttempt("reopen");
+              setWhatsAppOpened(true);
+            }}
             target="_blank"
             rel="noopener noreferrer"
             className="inline-flex items-center justify-center rounded-md bg-[#25D366] px-6 py-3 text-sm font-medium text-white transition hover:bg-[#20bd5a]"
@@ -488,14 +611,14 @@ export function CheckoutForm() {
     );
   }
 
-  const showConfigHint = !FORMSPREE_ID;
-
   return (
     <form
       onSubmit={handleSubmit}
       className="mt-8 space-y-6"
       noValidate
-      aria-describedby={showConfigHint ? "checkout-config-hint" : undefined}
+      aria-describedby={
+        Object.keys(fieldErrors).length > 0 ? "checkout-field-errors" : undefined
+      }
     >
       <div
         id="checkout-field-errors"
@@ -509,18 +632,35 @@ export function CheckoutForm() {
       </div>
 
       <div className="rounded-lg border border-amber-900/10 bg-white p-6">
+        <p className="mb-4 font-[var(--font-dm-sans)] text-[11px] font-semibold uppercase tracking-[0.08em] text-forest/60">
+          Cart → Details → Confirmed
+        </p>
         <h2 className="font-serif text-lg font-semibold text-forest">
           Order summary
         </h2>
         <ul className="mt-2 space-y-1 text-sm text-forest/80">
           {items.map((i) => (
-            <li key={i.id}>
+            <li key={i.id} className="break-words">
               {i.name} × {i.quantity} — {formatPrice(i.price * i.quantity)}
             </li>
           ))}
         </ul>
         <p className="mt-4 font-semibold text-forest">
           Total: {formatPrice(totalPrice)}
+        </p>
+        <p className="mt-3 text-xs leading-relaxed text-forest/65">
+          Totals reflect checkout prices. Delivery charges depend on city and are confirmed before
+          dispatch. No hidden charges are added after confirmation.
+        </p>
+        <p className="mt-2 text-xs leading-relaxed text-forest/60">
+          Nationwide COD — pay the courier when your parcel arrives.{" "}
+          <Link href="/cod" className="font-medium text-forest underline underline-offset-2">
+            Delivery &amp; COD details
+          </Link>
+        </p>
+        <p className="mt-2 text-xs leading-relaxed text-forest/60">
+          Estimated delivery fee:{" "}
+          <span className="font-medium text-forest/80">{deliveryEstimateForCity(formData.city)}</span>
         </p>
       </div>
       <div className="rounded-lg border border-amber-900/10 bg-white p-6">
@@ -531,6 +671,10 @@ export function CheckoutForm() {
           Use a phone number you use on{" "}
           <span className="font-medium text-forest/90">WhatsApp</span> so we can
           reach you quickly.
+        </p>
+        <p className="mt-2 rounded-md border border-emerald-900/10 bg-emerald-50/50 px-3 py-2 text-xs leading-relaxed text-forest/75">
+          After your first order on this device, we save your delivery details here so you can edit
+          and reuse them next time.
         </p>
         <div className="mt-4 grid gap-4 sm:grid-cols-2">
           <div>
@@ -544,6 +688,10 @@ export function CheckoutForm() {
               autoComplete="name"
               value={formData.name}
               onChange={(e) => {
+                if (!formStartedTracked.current) {
+                  formStartedTracked.current = true;
+                  trackCheckoutFormStarted();
+                }
                 setFormData((p) => ({ ...p, name: e.target.value }));
                 if (fieldErrors.name)
                   setFieldErrors((fe) => {
@@ -576,7 +724,12 @@ export function CheckoutForm() {
               placeholder="03XX XXXXXXX"
               value={formData.phone}
               onChange={(e) => {
-                setFormData((p) => ({ ...p, phone: e.target.value }));
+                if (!formStartedTracked.current) {
+                  formStartedTracked.current = true;
+                  trackCheckoutFormStarted();
+                }
+                const cleaned = e.target.value.replace(/[^\d+\s()-]/g, "");
+                setFormData((p) => ({ ...p, phone: cleaned }));
                 if (fieldErrors.phone)
                   setFieldErrors((fe) => {
                     const next = { ...fe };
@@ -604,8 +757,13 @@ export function CheckoutForm() {
             name="city"
             required
             autoComplete="address-level2"
+            list="city-suggestions"
             value={formData.city}
             onChange={(e) => {
+              if (!formStartedTracked.current) {
+                formStartedTracked.current = true;
+                trackCheckoutFormStarted();
+              }
               setFormData((p) => ({ ...p, city: e.target.value }));
               if (fieldErrors.city)
                 setFieldErrors((fe) => {
@@ -618,6 +776,11 @@ export function CheckoutForm() {
             aria-describedby={fieldErrors.city ? "city-error" : undefined}
             className="mt-1 w-full rounded border border-amber-900/20 px-3 py-2 text-forest aria-invalid:border-red-400"
           />
+          <datalist id="city-suggestions">
+            {PAKISTAN_CITIES.map((city) => (
+              <option key={city} value={city} />
+            ))}
+          </datalist>
           {fieldErrors.city && (
             <p id="city-error" className="mt-1 text-sm text-red-800" role="alert">
               {fieldErrors.city}
@@ -636,6 +799,10 @@ export function CheckoutForm() {
             autoComplete="street-address"
             value={formData.address}
             onChange={(e) => {
+              if (!formStartedTracked.current) {
+                formStartedTracked.current = true;
+                trackCheckoutFormStarted();
+              }
               setFormData((p) => ({ ...p, address: e.target.value }));
               if (fieldErrors.address)
                 setFieldErrors((fe) => {
@@ -670,13 +837,6 @@ export function CheckoutForm() {
           />
         </div>
       </div>
-      {showConfigHint && (
-        <p id="checkout-config-hint" className="text-sm text-amber-900">
-          Online form submission is optional. You can{" "}
-          <strong>send your order on WhatsApp</strong> with the button below — fill
-          in your details first so we can deliver.
-        </p>
-      )}
       {status === "error" && errorDetail && (
         <div
           className="rounded-lg border border-red-200 bg-red-50/80 p-4 text-sm text-red-900"
@@ -685,38 +845,61 @@ export function CheckoutForm() {
         >
           <p className="font-medium">Could not place order</p>
           <p className="mt-1">{errorDetail}</p>
-          <a
-            href={whatsAppOrderLink(
-              `Hi Artzen — I tried to place an order on the website but got an error. My name: ${formData.name || "—"}. Phone: ${formData.phone || "—"}.`
-            )}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="mt-3 inline-block font-medium text-red-800 underline hover:text-red-950"
-          >
-            Message us on WhatsApp
-          </a>
+          <p className="mt-2 text-red-900/90">
+            You can still send your cart and address on WhatsApp — we&apos;ll process it manually.
+          </p>
+          <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+            <a
+              href={whatsAppOrderLink(
+                buildManualWhatsAppMessage(formData, items, totalPrice)
+              )}
+              onClick={() => {
+                trackWhatsAppOpenAttempt("fallback");
+                trackWhatsAppFallbackClicked();
+              }}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center justify-center rounded-md bg-[#25D366] px-4 py-2.5 text-sm font-medium text-white hover:bg-[#20bd5a]"
+            >
+              Send order on WhatsApp (fallback)
+            </a>
+            <a
+              href={whatsAppOrderLink(
+                `Hi ${SITE_BRAND} — I tried to place an order on the website but got an error. My name: ${formData.name || "—"}. Phone: ${formData.phone || "—"}.`
+              )}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center justify-center rounded-md border border-red-300 bg-white px-4 py-2.5 text-sm font-medium text-red-900 underline-offset-2 hover:underline"
+            >
+              Quick message (no cart details)
+            </a>
+          </div>
         </div>
       )}
+      <p className="rounded-lg border border-[#25D366]/30 bg-[#25D366]/10 p-3 text-sm text-[#0f5f55]">
+        Submitting places your order on the website immediately. WhatsApp opens as an optional fast
+        follow-up channel.
+      </p>
+      <p className="text-xs text-forest/60">
+        By placing the order you agree to our{" "}
+        <Link href="/terms" className="underline underline-offset-2">
+          Terms
+        </Link>
+        {" "}and{" "}
+        <Link href="/privacy-policy" className="underline underline-offset-2">
+          Privacy Policy
+        </Link>
+        .
+      </p>
       <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
         <button
           type="submit"
           disabled={status === "sending"}
-          title={
-            showConfigHint
-              ? "Configure NEXT_PUBLIC_FORMSPREE_ID for online submit, or use WhatsApp"
-              : undefined
-          }
-          className="rounded-md bg-forest px-6 py-3 text-sm font-medium text-cream transition hover:bg-forest/90 disabled:opacity-50"
+          className="rounded-md bg-[#25D366] px-6 py-3 text-sm font-semibold text-white transition hover:bg-[#20bd5a] disabled:opacity-50"
         >
-          {status === "sending" ? "Placing order…" : "Place order (COD)"}
-        </button>
-        <button
-          type="button"
-          disabled={status === "sending"}
-          onClick={submitViaWhatsApp}
-          className="rounded-md border-2 border-[#25D366] bg-[#25D366]/10 px-6 py-3 text-sm font-semibold text-[#128C7E] transition hover:bg-[#25D366]/15 disabled:opacity-50"
-        >
-          Send order on WhatsApp
+          {status === "sending"
+            ? "Placing order..."
+            : "Place order securely"}
         </button>
         <Link
           href="/cart"

@@ -1,5 +1,10 @@
 @import "tailwindcss";
 
+/* Catalog product imagery: discourage long-press / callout (deterrent only) */
+.catalog-image-protect {
+  -webkit-touch-callout: none;
+}
+
 /* Slate & Sage — Frontend skill palette; legacy names alias for existing components */
 :root {
   /* ── Core three ── */
@@ -110,11 +115,21 @@
   --font-serif: var(--font-cormorant);
 }
 
+/* clip avoids horizontal scroll without creating a scrollport that breaks position:sticky */
+html {
+  overflow-x: clip;
+}
+
 body {
   background: var(--bg);
   color: var(--text-secondary);
   font-family: var(--font-sans), system-ui, sans-serif;
-  overflow-x: hidden;
+  overflow-x: clip;
+}
+
+main.site-main {
+  min-width: 0;
+  width: 100%;
 }
 
 @keyframes fadeUp {
@@ -138,6 +153,21 @@ body {
   }
 }
 
+@media (prefers-reduced-motion: reduce) {
+  html:focus-within {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
 .faq-section__chevron {
   transition: transform 0.25s ease;
 }
@@ -150,7 +180,8 @@ body {
 @media (max-width: 767px) {
   :root {
     --site-mobile-announcement-h: 40px;
-    --site-mobile-nav-h: 120px;
+    /* Single-row mobile nav (logo + actions); search opens in-place, not stacked in this reserve */
+    --site-mobile-nav-h: 76px;
     --site-mobile-header-total: calc(
       var(--site-mobile-announcement-h) + var(--site-mobile-nav-h)
     );
@@ -183,6 +214,10 @@ body {
   }
 
   .shop-filter-toolbar {
+    top: var(--site-mobile-header-total) !important;
+  }
+
+  .collection-page-toolbar {
     top: var(--site-mobile-header-total) !important;
   }
 
@@ -441,5 +476,19 @@ body {
 
   footer {
     padding-bottom: calc(2rem + var(--site-mobile-tabbar-h)) !important;
+  }
+}
+
+/* Sticky shop filter strip + collection header: below two-row nav on tablet. */
+@media (min-width: 768px) and (max-width: 1023px) {
+  .shop-filter-toolbar,
+  .collection-page-toolbar {
+    top: 7.25rem !important;
+  }
+}
+
+@media (min-width: 1024px) {
+  .collection-page-toolbar {
+    top: var(--nav-h-desktop) !important;
   }
 }

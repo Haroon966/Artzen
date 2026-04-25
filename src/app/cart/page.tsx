@@ -1,11 +1,11 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { getSiteOrigin } from "@/lib/site";
+import { getSiteOrigin, SITE_BRAND } from "@/lib/site";
 import { CartContent } from "./CartContent";
 
 export const metadata: Metadata = {
   title: "Cart",
-  description: "Your cart at Artzen. Review items and checkout with Cash on Delivery.",
+  description: `Your cart at ${SITE_BRAND}. Review items and checkout with Cash on Delivery.`,
   alternates: { canonical: `${getSiteOrigin()}/cart` },
   robots: { index: false, follow: true },
 };

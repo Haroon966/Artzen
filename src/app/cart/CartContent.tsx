@@ -2,13 +2,41 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import { useEffect, useRef, useState } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 import { useCart } from "@/context/CartContext";
+import {
+  trackRemoveFromCart,
+  trackUpdateCartQuantity,
+  trackViewCart,
+} from "@/lib/analytics";
+import {
+  catalogImageProtectClassName,
+  productImageInteractionProps,
+} from "@/lib/image-protection";
 
 const PLACEHOLDER_IMAGE = "/images/products/placeholder.svg";
+const DELIVERY_ESTIMATES: Record<string, string> = {
+  karachi: "Rs. 250-350",
+  lahore: "Rs. 250-350",
+  islamabad: "Rs. 300-400",
+  rawalpindi: "Rs. 300-400",
+  faisalabad: "Rs. 300-420",
+  multan: "Rs. 320-450",
+  peshawar: "Rs. 350-500",
+  quetta: "Rs. 400-600",
+  hyderabad: "Rs. 280-380",
+  sialkot: "Rs. 300-420",
+};
 
 function formatPrice(price: number) {
   return `Rs. ${price.toLocaleString("en-PK")}`;
+}
+
+function cityEstimateLabel(city: string): string {
+  const key = city.trim().toLowerCase();
+  if (!key) return "Rs. 250-450 (major cities)";
+  return DELIVERY_ESTIMATES[key] ?? "Rs. 300-550 (depends on courier zone)";
 }
 
 function QtyStepper({
@@ -52,6 +80,14 @@ function QtyStepper({
 export function CartContent() {
   const { items, removeItem, updateQuantity, totalPrice, totalItems } = useCart();
   const reduceMotion = useReducedMotion();
+  const viewTracked = useRef(false);
+  const [estimateCity, setEstimateCity] = useState("");
+
+  useEffect(() => {
+    if (items.length === 0 || viewTracked.current) return;
+    viewTracked.current = true;
+    trackViewCart(items, totalPrice);
+  }, [items, totalPrice]);
 
   if (items.length === 0) {
     return (
@@ -141,15 +177,15 @@ export function CartContent() {
               />
               <Link
                 href={`/products/${item.slug}`}
-                className="relative aspect-[4/3] w-full shrink-0 overflow-hidden bg-cream-deep sm:aspect-auto sm:w-36 sm:max-w-[9rem] md:w-40"
+                className={`relative aspect-[4/3] w-full shrink-0 overflow-hidden bg-cream-deep sm:aspect-auto sm:w-36 sm:max-w-[9rem] md:w-40 ${catalogImageProtectClassName}`}
               >
                 <Image
                   src={item.image || PLACEHOLDER_IMAGE}
                   alt={item.name}
                   fill
                   className="object-cover transition duration-500 group-hover:scale-[1.04]"
-                  sizes="(max-width:640px) 100vw, 160px"
-                  unoptimized
+                  sizes="(max-width:640px) min(100vw, 1400px), min(160px, 1400px)"
+                  {...productImageInteractionProps}
                 />
               </Link>
               <div className="flex min-w-0 flex-1 flex-col justify-center gap-3 px-5 py-5 sm:px-6 sm:py-5">
@@ -168,11 +204,17 @@ export function CartContent() {
                   <QtyStepper
                     name={item.name}
                     quantity={item.quantity}
-                    onChange={(q) => updateQuantity(item.id, q)}
+                    onChange={(q) => {
+                      updateQuantity(item.id, q);
+                      trackUpdateCartQuantity({ ...item, quantity: q });
+                    }}
                   />
                   <button
                     type="button"
-                    onClick={() => removeItem(item.id)}
+                    onClick={() => {
+                      removeItem(item.id);
+                      trackRemoveFromCart(item);
+                    }}
                     className="font-[var(--font-dm-sans)] text-[12px] font-medium uppercase tracking-wider text-[var(--muted)] underline decoration-black/20 underline-offset-4 transition hover:text-[#8b2525] hover:decoration-[#8b2525]/40"
                   >
                     Remove
@@ -213,7 +255,7 @@ export function CartContent() {
             </div>
             <div className="flex justify-between text-cream-deep/65">
               <span>Delivery</span>
-              <span className="text-[var(--gold2)]">At COD</span>
+              <span className="text-[var(--gold2)]">Calculated by city at confirmation</span>
             </div>
           </div>
           <div className="mt-6 flex items-end justify-between gap-4">
@@ -222,6 +264,28 @@ export function CartContent() {
             </span>
             <p className="text-right font-[var(--font-cormorant)] text-3xl font-semibold text-cream-soft">
               {formatPrice(totalPrice)}
+            </p>
+          </div>
+          <div className="mt-4 rounded-lg border border-white/10 bg-white/5 p-3">
+            <label
+              htmlFor="cart-city-estimate"
+              className="block font-[var(--font-dm-sans)] text-[11px] uppercase tracking-[0.08em] text-cream-deep/70"
+            >
+              Delivery estimate by city
+            </label>
+            <input
+              id="cart-city-estimate"
+              type="text"
+              placeholder="e.g. Lahore"
+              value={estimateCity}
+              onChange={(e) => setEstimateCity(e.target.value)}
+              className="mt-2 w-full rounded-md border border-white/15 bg-transparent px-3 py-2 font-[var(--font-dm-sans)] text-[13px] text-cream-soft placeholder:text-cream-deep/50"
+            />
+            <p className="mt-2 font-[var(--font-dm-sans)] text-[12px] text-cream-deep/75">
+              Estimated fee:{" "}
+              <span className="font-medium text-cream-soft">
+                {cityEstimateLabel(estimateCity)}
+              </span>
             </p>
           </div>
           <Link
@@ -238,7 +302,7 @@ export function CartContent() {
             Continue shopping
           </Link>
           <p className="mt-6 text-center font-[var(--font-dm-sans)] text-[12px] font-light leading-relaxed text-cream-deep/70">
-            Pay when your order arrives — no advance required.
+            COD across Pakistan. We confirm delivery fee and final payable total before dispatch.
           </p>
         </motion.div>
       </aside>

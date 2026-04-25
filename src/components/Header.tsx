@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useSearchParams, useRouter } from "next/navigation";
 import {
@@ -15,6 +16,7 @@ import { FavoriteCount } from "@/components/FavoriteCount";
 import { NavCategoriesDropdown } from "@/components/NavCategoriesDropdown";
 import { getNavCategoryLinks } from "@/lib/data";
 import { useMobileNav } from "@/context/MobileNavContext";
+import { SITE_BRAND } from "@/lib/site";
 
 export type NavLinkItem = { href: string; label: string };
 
@@ -49,14 +51,6 @@ function WhatsAppNavIcon({ className }: { className?: string }) {
         fill="#25D366"
         d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"
       />
-    </svg>
-  );
-}
-
-function LogoIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} viewBox="0 0 24 24" fill="currentColor">
-      <path d="M12 2l1.8 5.4H19l-4.3 3.2 1.6 5.4L12 13l-4.3 3 1.6-5.4L5 7.4h5.2z" />
     </svg>
   );
 }
@@ -114,6 +108,63 @@ function useFocusTrap(
   }, [active, containerRef, restoreRef]);
 }
 
+function NavSearchIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      className={className}
+      width="18"
+      height="18"
+      fill="none"
+      viewBox="0 0 24 24"
+      stroke="currentColor"
+      strokeWidth={1.75}
+      aria-hidden
+    >
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z"
+      />
+    </svg>
+  );
+}
+
+function HeaderSearchField({
+  id,
+  value,
+  onChange,
+  inputClassName,
+}: {
+  id: string;
+  value: string;
+  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  inputClassName: string;
+}) {
+  return (
+    <div className="relative min-w-0 flex-1">
+      <label htmlFor={id} className="sr-only">
+        Search products
+      </label>
+      <span
+        className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[var(--nav-caption)]"
+        aria-hidden
+      >
+        <NavSearchIcon className="h-4 w-4" />
+      </span>
+      <input
+        id={id}
+        type="search"
+        enterKeyHint="search"
+        value={value}
+        onChange={onChange}
+        placeholder="Search…"
+        className={inputClassName}
+        autoComplete="off"
+      />
+    </div>
+  );
+}
+
 function HeaderLoading() {
   return (
     <header
@@ -127,7 +178,9 @@ function HeaderLoading() {
       >
         <div className="flex flex-col gap-2.5 lg:hidden" aria-hidden>
           <div className="flex items-center justify-between max-md:justify-start">
-            <div className="h-7 w-24 rounded bg-black/[0.06] max-md:mr-auto" />
+            <div className="max-md:mr-auto">
+              <div className="h-10 w-36 rounded bg-black/[0.06]" aria-hidden />
+            </div>
             <div className="flex gap-1.5 max-md:hidden">
               <div className="h-9 w-9 rounded-full bg-black/[0.06]" />
               <div className="h-9 w-9 rounded-full bg-[#25D366]/25" />
@@ -142,7 +195,7 @@ function HeaderLoading() {
           aria-hidden
         >
           <div className="h-4 w-48 rounded bg-black/[0.06]" />
-          <div className="h-7 w-28 rounded bg-black/[0.06]" />
+          <div className="h-10 w-40 rounded bg-black/[0.06]" aria-hidden />
           <div className="flex max-w-[300px] flex-1 items-center justify-end gap-2">
             <div className="h-9 flex-1 rounded-full bg-black/[0.06]" />
             <div className="h-9 w-9 rounded-full bg-black/[0.06]" />
@@ -164,6 +217,7 @@ function HeaderInner({ categoryLinks }: { categoryLinks: NavLinkItem[] }) {
   const [scrolled, setScrolled] = useState(false);
   const [overlayTop, setOverlayTop] = useState(104);
   const [searchQuery, setSearchQuery] = useState("");
+  const [searchOpen, setSearchOpen] = useState(false);
 
   const menuButtonRef = useRef<HTMLButtonElement>(null);
   const mobilePanelRef = useRef<HTMLDivElement>(null);
@@ -181,6 +235,7 @@ function HeaderInner({ categoryLinks }: { categoryLinks: NavLinkItem[] }) {
       pathname.startsWith("/products"));
   const homeActive = pathname === "/";
   const aboutActive = pathname === "/about";
+  const profileActive = pathname.startsWith("/profile");
 
   const updateOverlayTop = useCallback(() => {
     const nav = document.querySelector("[data-main-nav]");
@@ -246,6 +301,41 @@ function HeaderInner({ categoryLinks }: { categoryLinks: NavLinkItem[] }) {
     setSearchQuery(searchParams.get("q") ?? "");
   }, [pathname, searchParams]);
 
+  useEffect(() => {
+    setSearchOpen(false);
+  }, [pathname]);
+
+  useEffect(() => {
+    if (!searchOpen) return;
+    function onPointerDown(e: PointerEvent) {
+      const el = e.target as HTMLElement;
+      if (el.closest("[data-nav-search]")) return;
+      setSearchOpen(false);
+    }
+    document.addEventListener("pointerdown", onPointerDown);
+    return () => document.removeEventListener("pointerdown", onPointerDown);
+  }, [searchOpen]);
+
+  useEffect(() => {
+    if (!searchOpen) return;
+    function onKey(e: KeyboardEvent) {
+      if (e.key === "Escape") setSearchOpen(false);
+    }
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [searchOpen]);
+
+  useEffect(() => {
+    if (!searchOpen) return;
+    const id =
+      typeof window !== "undefined" && window.matchMedia("(min-width: 1024px)").matches
+        ? `${searchInputId}-desk`
+        : `${searchInputId}-mob`;
+    requestAnimationFrame(() => {
+      document.getElementById(id)?.focus();
+    });
+  }, [searchOpen, searchInputId]);
+
   const navText =
     `font-[var(--font-dm-sans)] text-[13px] tracking-wide no-underline transition-all duration-[250ms] ease ${focusRing}`;
   const navLinkInactive = `${navText} font-normal text-[var(--nav-link-muted)] hover:text-[var(--dark)]`;
@@ -260,6 +350,7 @@ function HeaderInner({ categoryLinks }: { categoryLinks: NavLinkItem[] }) {
     if (q) params.set("q", q);
     const qs = params.toString();
     router.push(qs ? `/shop?${qs}` : "/shop");
+    setSearchOpen(false);
   }
 
   const searchInputClass =
@@ -270,44 +361,6 @@ function HeaderInner({ categoryLinks }: { categoryLinks: NavLinkItem[] }) {
 
   const waBtn =
     `${iconBtn} border border-[#25D366]/35 bg-[#25D366]/[0.06] hover:border-[#25D366]/55 hover:bg-[#25D366]/10`;
-
-  function SearchField({ id }: { id: string }) {
-    return (
-      <div className="relative min-w-0 flex-1">
-        <label htmlFor={id} className="sr-only">
-          Search products
-        </label>
-        <span
-          className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[var(--nav-caption)]"
-          aria-hidden
-        >
-          <svg
-            className="h-4 w-4"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-            strokeWidth={1.75}
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z"
-            />
-          </svg>
-        </span>
-        <input
-          id={id}
-          type="search"
-          enterKeyHint="search"
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          placeholder="Search…"
-          className={searchInputClass}
-          autoComplete="off"
-        />
-      </div>
-    );
-  }
 
   return (
     <>
@@ -326,15 +379,34 @@ function HeaderInner({ categoryLinks }: { categoryLinks: NavLinkItem[] }) {
         >
           {/* Mobile / tablet */}
           <div className="flex min-h-[44px] flex-col gap-3 lg:hidden">
-            <div className="flex items-center justify-between gap-2 max-md:justify-start">
+            <div className="flex w-full items-center justify-between gap-2">
               <Link
                 href="/"
-                className={`font-[var(--font-cormorant)] flex items-center gap-2 text-[clamp(1.25rem,5vw,1.625rem)] font-semibold leading-none tracking-wide text-[var(--dark)] no-underline max-md:mr-auto ${focusRing}`}
+                className={`flex shrink-0 items-center text-[var(--dark)] no-underline ${focusRing}`}
+                aria-label={`${SITE_BRAND} home`}
               >
-                <LogoIcon className="h-5 w-5 shrink-0 text-[var(--golden-earth)]" />
-                Artzen
+                <Image
+                  src="/Artzens-logo.png"
+                  alt={SITE_BRAND}
+                  width={188}
+                  height={56}
+                  className="h-11 w-auto sm:h-12"
+                  priority
+                />
               </Link>
-              <div className="flex shrink-0 items-center gap-2 max-md:hidden">
+              <div className="flex shrink-0 items-center gap-2">
+                <button
+                  type="button"
+                  data-nav-search
+                  className={iconBtn}
+                  aria-label={searchOpen ? "Close search" : "Open search"}
+                  aria-expanded={searchOpen}
+                  aria-controls={`${searchInputId}-mob-panel`}
+                  onClick={() => setSearchOpen((v) => !v)}
+                >
+                  <NavSearchIcon />
+                </button>
+                <div className="flex shrink-0 items-center gap-2">
                 <Link
                   href="/favorites"
                   className={`relative ${iconBtn}`}
@@ -417,11 +489,24 @@ function HeaderInner({ categoryLinks }: { categoryLinks: NavLinkItem[] }) {
                     </svg>
                   )}
                 </button>
+                </div>
               </div>
             </div>
-            <form onSubmit={runSearch} className="w-full min-w-0">
-              <SearchField id={`${searchInputId}-mob`} />
-            </form>
+            {searchOpen && (
+              <form
+                id={`${searchInputId}-mob-panel`}
+                data-nav-search
+                onSubmit={runSearch}
+                className="w-full min-w-0"
+              >
+                <HeaderSearchField
+                  id={`${searchInputId}-mob`}
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  inputClassName={searchInputClass}
+                />
+              </form>
+            )}
           </div>
 
           {/* Desktop */}
@@ -466,18 +551,57 @@ function HeaderInner({ categoryLinks }: { categoryLinks: NavLinkItem[] }) {
                   About
                 </Link>
               </li>
+              <li>
+                <Link
+                  href="/profile"
+                  className={profileActive ? navLinkActive : navLinkInactive}
+                  aria-current={profileActive ? "page" : undefined}
+                >
+                  Profile
+                </Link>
+              </li>
             </ul>
             <Link
               href="/"
-              className={`font-[var(--font-cormorant)] absolute left-1/2 flex -translate-x-1/2 items-center gap-2 text-[clamp(1.375rem,2.5vw,1.625rem)] font-semibold tracking-wide text-[var(--dark)] no-underline ${focusRing}`}
+              className={`absolute left-1/2 flex -translate-x-1/2 items-center text-[var(--dark)] no-underline ${focusRing}`}
+              aria-label={`${SITE_BRAND} home`}
             >
-              <LogoIcon className="h-5 w-5 text-[var(--golden-earth)]" />
-              Artzen
+              <Image
+                src="/Artzens-logo.png"
+                alt={SITE_BRAND}
+                width={212}
+                height={64}
+                className="h-14 w-auto"
+                priority
+              />
             </Link>
-            <div className="flex min-w-0 max-w-[min(300px,30vw)] flex-1 items-center justify-end gap-2 xl:max-w-[340px]">
-              <form onSubmit={runSearch} className="min-w-0 flex-1">
-                <SearchField id={`${searchInputId}-desk`} />
-              </form>
+            <div className="flex min-w-0 flex-1 items-center justify-end gap-2">
+              <button
+                type="button"
+                data-nav-search
+                className={iconBtn}
+                aria-label={searchOpen ? "Close search" : "Open search"}
+                aria-expanded={searchOpen}
+                aria-controls={`${searchInputId}-desk-panel`}
+                onClick={() => setSearchOpen((v) => !v)}
+              >
+                <NavSearchIcon />
+              </button>
+              {searchOpen && (
+                <form
+                  id={`${searchInputId}-desk-panel`}
+                  data-nav-search
+                  onSubmit={runSearch}
+                  className="min-w-0 max-w-[min(300px,40vw)] flex-1 xl:max-w-[340px]"
+                >
+                  <HeaderSearchField
+                    id={`${searchInputId}-desk`}
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    inputClassName={searchInputClass}
+                  />
+                </form>
+              )}
               <Link
                 href="/favorites"
                 className={`relative ${iconBtn}`}
@@ -541,6 +665,22 @@ function HeaderInner({ categoryLinks }: { categoryLinks: NavLinkItem[] }) {
           aria-label="Mobile navigation"
         >
           <div className="px-4 py-6 md:px-6">
+            <div className="mb-6 border-b border-[rgba(237,230,222,0.12)] pb-6">
+              <Link
+                href="/"
+                className={`inline-flex max-w-full ${focusRing}`}
+                onClick={() => setMobileOpen(false)}
+                aria-label={`${SITE_BRAND} home`}
+              >
+                <Image
+                  src="/Artzens-logo.png"
+                  alt={SITE_BRAND}
+                  width={200}
+                  height={56}
+                  className="h-11 w-auto max-w-[min(100%,220px)] object-contain object-left"
+                />
+              </Link>
+            </div>
             <nav className="flex flex-col gap-0.5" aria-label="Mobile">
               <Link
                 href="/"
@@ -596,6 +736,14 @@ function HeaderInner({ categoryLinks }: { categoryLinks: NavLinkItem[] }) {
                 onClick={() => setMobileOpen(false)}
               >
                 About
+              </Link>
+              <Link
+                href="/profile"
+                className={`rounded-lg px-3 py-3 font-[var(--font-dm-sans)] text-[15px] text-[var(--text-on-dark-link)] no-underline transition-all duration-[250ms] ease hover:bg-[rgba(237,230,222,0.1)] ${focusRing}`}
+                onClick={() => setMobileOpen(false)}
+                aria-current={profileActive ? "page" : undefined}
+              >
+                Profile
               </Link>
             </nav>
           </div>

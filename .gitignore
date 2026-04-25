@@ -20,17 +20,18 @@
 /.next/
 /out/
 
+# Generated at build time (origin from NEXT_PUBLIC_SITE_URL)
+/public/llms.txt
+/public/llms-full.txt
+
 # production
 /build
 
 # misc
 .DS_Store
 *.pem
-# Firebase service account keys — never commit
-*-firebase-adminsdk-*.json
-firebase-adminsdk-*.json
-artzen-firebase-adminsdk-*.json
-artzen-a8b04-firebase-adminsdk-fbsvc-2df529cf63.json
+# Service account / admin SDK JSON keys — never commit
+*-adminsdk-*.json
 # debug
 npm-debug.log*
 yarn-debug.log*

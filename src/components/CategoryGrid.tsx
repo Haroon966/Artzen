@@ -9,6 +9,11 @@ import {
   getCollectionCoverImage,
   getCollectionDisplayName,
 } from "@/lib/data";
+import { CatalogImageWatermark } from "@/components/CatalogImageWatermark";
+import {
+  catalogImageProtectClassName,
+  productImageInteractionProps,
+} from "@/lib/image-protection";
 
 const MotionLink = motion(Link);
 
@@ -19,8 +24,8 @@ const layoutBySlug: Record<string, string> = {
     "min-h-[200px] md:col-span-2 md:row-start-1 md:col-start-5 md:min-h-[168px]",
   "premium-islamic-art-collection":
     "min-h-[200px] md:col-span-2 md:row-start-2 md:col-start-5 md:min-h-[168px]",
-  "vintage-logo": "min-h-[200px] md:col-span-3 md:row-start-3 md:col-start-1",
-  "customize-keychain": "min-h-[200px] md:col-span-3 md:row-start-3 md:col-start-4",
+  "vintage-logo":
+    "min-h-[200px] md:col-span-6 md:row-start-3 md:col-start-1 md:min-h-[168px]",
 };
 
 function taglineFor(collection: Collection): string {
@@ -54,19 +59,23 @@ export function CategoryGrid({
           <MotionLink
             key={collection.slug}
             href={`/collections/${collection.slug}`}
-            className={`group relative flex flex-col justify-end overflow-hidden rounded-[var(--radius)] border border-black/[0.06] bg-[#1a1917] shadow-sm transition-shadow hover:shadow-xl ${layout}`}
+            className={`group relative flex flex-col justify-end overflow-hidden rounded-[var(--radius)] border border-black/[0.06] bg-[#1a1917] shadow-sm transition-shadow hover:shadow-xl ${layout} ${catalogImageProtectClassName}`}
             whileHover={reduceMotion ? undefined : { scale: 1.01 }}
             whileTap={reduceMotion ? undefined : { scale: 0.995 }}
             transition={{ duration: 0.22, ease: [0.25, 0.46, 0.45, 0.94] }}
           >
             {cover ? (
-              <Image
-                src={cover}
-                alt=""
-                fill
-                className="object-cover transition duration-700 ease-out group-hover:scale-105"
-                sizes="(max-width:768px) 100vw, 50vw"
-              />
+              <>
+                <Image
+                  src={cover}
+                  alt={`${title} collection cover`}
+                  fill
+                  className="object-cover transition duration-700 ease-out group-hover:scale-105"
+                  sizes="(max-width:768px) min(100vw, 1400px), min(50vw, 1400px)"
+                  {...productImageInteractionProps}
+                />
+                <CatalogImageWatermark variant="category" />
+              </>
             ) : (
               <div
                 className="absolute inset-0 bg-gradient-to-br from-[#2a2825] via-[#1a1917] to-[#0f0e0c]"
@@ -74,10 +83,10 @@ export function CategoryGrid({
               />
             )}
             <div
-              className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/35 to-transparent transition duration-500 group-hover:from-black/90"
+              className="absolute inset-0 z-[2] bg-gradient-to-t from-black/85 via-black/35 to-transparent transition duration-500 group-hover:from-black/90"
               aria-hidden
             />
-            <div className="relative z-[1] p-6 sm:p-7 md:p-8">
+            <div className="relative z-[3] p-6 sm:p-7 md:p-8">
               <span className="inline-block rounded-full border border-white/20 bg-white/10 px-2.5 py-0.5 font-[var(--font-dm-sans)] text-[10px] font-medium uppercase tracking-wider text-white/90 backdrop-blur-sm">
                 Shop
               </span>

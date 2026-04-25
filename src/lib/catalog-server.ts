@@ -1,6 +1,9 @@
 import type { Collection, Product, HeroStripItem } from "@/lib/data";
 import { collections as staticCollections, products as staticProducts } from "@/lib/data";
 import * as q from "@/lib/catalog-queries";
+import { toShopListProduct, type ShopListProduct } from "@/lib/shop-list-product";
+import { buildShopFacetSummary } from "@/lib/shop-filters";
+import type { ShopCategoryFilter, ShopFacetSummary } from "@/lib/shop-types";
 
 export const CATALOG_CACHE_TAG = "catalog";
 
@@ -60,11 +63,31 @@ export async function getServerNavCategoryLinks(): Promise<
   return q.getNavCategoryLinksFrom(collections);
 }
 
-export async function getServerShopCategoryFilters(): Promise<
-  { slug: string | null; label: string }[]
-> {
+export async function getServerShopCategoryFilters(): Promise<ShopCategoryFilter[]> {
   const { collections } = await getCachedCatalog();
   return q.shopCategoryFiltersFrom(collections);
+}
+
+/** Shop `/shop/` payload: lightweight products + precomputed facet counts (no extra client passes over the full catalog). */
+export async function getServerShopPageData(): Promise<{
+  shopProducts: ShopListProduct[];
+  categoryLinks: { href: string; label: string }[];
+  categoryFilters: ShopCategoryFilter[];
+  facetSummary: ShopFacetSummary;
+  count: number;
+}> {
+  const { products, collections } = await getCachedCatalog();
+  const shopProducts = products.map(toShopListProduct);
+  const categoryLinks = q.getNavCategoryLinksFrom(collections);
+  const categoryFilters = q.shopCategoryFiltersFrom(collections);
+  const facetSummary = buildShopFacetSummary(shopProducts, categoryFilters);
+  return {
+    shopProducts,
+    categoryLinks,
+    categoryFilters,
+    facetSummary,
+    count: products.length,
+  };
 }
 
 export async function getServerCollectionCoverImage(

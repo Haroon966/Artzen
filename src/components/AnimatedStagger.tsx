@@ -1,65 +1,50 @@
 "use client";
 
-import { motion, useReducedMotion } from "framer-motion";
+import type React from "react";
+import { Children, isValidElement } from "react";
+import { useRevealWhenVisible } from "@/lib/use-reveal-when-visible";
+import { usePrefersReducedMotion } from "@/lib/use-prefers-reduced-motion";
 
 const staggerDuration = 0.06;
 
 export function AnimatedStagger({
   children,
-  className,
+  className = "",
   staggerDelay = staggerDuration,
-  childClassName,
+  childClassName = "",
 }: {
   children: React.ReactNode;
   className?: string;
   staggerDelay?: number;
   childClassName?: string;
 }) {
-  const reduceMotion = useReducedMotion();
-
-  const container = reduceMotion
-    ? undefined
-    : {
-        hidden: { opacity: 0 },
-        visible: {
-          opacity: 1,
-          transition: {
-            staggerChildren: staggerDelay,
-            delayChildren: 0.05,
-          },
-        },
-      };
-
-  const item = reduceMotion
-    ? undefined
-    : {
-        hidden: { opacity: 0, y: 20 },
-        visible: {
-          opacity: 1,
-          y: 0,
-          transition: { duration: 0.4, ease: [0.25, 0.46, 0.45, 0.94] as const },
-        },
-      };
+  const reduceMotion = usePrefersReducedMotion();
+  const { ref, visible } = useRevealWhenVisible(400);
 
   if (reduceMotion) {
     return <div className={className}>{children}</div>;
   }
 
+  const items = Children.toArray(children);
+
   return (
-    <motion.div
-      className={className}
-      variants={container}
-      initial="hidden"
-      whileInView="visible"
-      viewport={{ once: true, amount: 0.15 }}
+    <div
+      ref={ref as React.RefObject<HTMLDivElement | null>}
+      className={`${className} transition-opacity duration-500 ease-[cubic-bezier(0.25,0.46,0.45,0.94)] ${
+        visible ? "opacity-100" : "opacity-0"
+      }`.trim()}
     >
-      {Array.isArray(children)
-        ? children.map((child, i) => (
-            <motion.div key={i} variants={item} className={childClassName}>
-              {child}
-            </motion.div>
-          ))
-        : children}
-    </motion.div>
+      {items.map((child, i) => (
+        <div
+          key={isValidElement(child) ? child.key ?? i : i}
+          className={`${childClassName} transition-[opacity,transform] duration-[400ms] ease-[cubic-bezier(0.25,0.46,0.45,0.94)] ${
+            visible ? "translate-y-0 opacity-100" : "translate-y-5 opacity-0"
+          }`.trim()}
+          style={{ transitionDelay: `${i * staggerDelay}s` }}
+        >
+          {child}
+        </div>
+      ))}
+    </div>
   );
 }
