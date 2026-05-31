@@ -2,9 +2,11 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { absoluteUrl, getDefaultShareImagePath, getSiteOrigin } from "@/lib/site";
 import { faqPageJsonLd, homeFaqItems } from "@/lib/faq-content";
-import { CategoryGrid } from "@/components/CategoryGrid";
+import { HomeCategorySectionClient } from "@/components/HomeCategorySectionClient";
+import { HomeHeroFanClient } from "@/components/HomeHeroFanClient";
+import { HomeTrustStrip } from "@/components/HomeTrustStrip";
+import { HomeVoucherSection } from "@/components/HomeVoucherSection";
 import { WhyArtzen } from "@/components/WhyArtzen";
-import { HeroProductFan } from "@/components/HeroProductFan";
 import { HomeHeroMobileSlides } from "@/components/HomeHeroMobileSlides";
 import { AnimatedSection } from "@/components/AnimatedSection";
 import { FaqSection } from "@/components/FaqSection";
@@ -42,9 +44,13 @@ export default async function Home() {
   const { products, collections } = await getCachedCatalog();
   const heroStripItems = q.getHeroStripProductsFrom(products);
   const homepageCategories = q.getHomepageCollectionsFrom(collections);
-  const coverBySlug: Record<string, string | undefined> = {};
+  const slidesBySlug: Record<string, string[]> = {};
   for (const c of homepageCategories) {
-    coverBySlug[c.slug] = q.getCollectionCoverPreferMockupFrom(products, c);
+    slidesBySlug[c.slug] = q.getCollectionCategoryCardSlideImagesFrom(
+      products,
+      collections,
+      c
+    );
   }
   const homeFaqLd = faqPageJsonLd(homeFaqItems);
 
@@ -112,59 +118,16 @@ export default async function Home() {
           </div>
         </div>
 
-        <div className="card-strip mt-10 hidden md:mt-14 md:block">
-          <HeroProductFan items={heroStripItems} />
-        </div>
-
-        <div className="home-feature-bar feature-bar relative z-[1] mt-10 grid w-full max-w-[1100px] grid-cols-1 gap-px overflow-hidden rounded-2xl bg-[var(--border-mid)] animate-[fadeUp_1s_0.25s_ease_both] sm:grid-cols-3">
-          <div className="feature-item bg-[var(--cream)] px-6 py-7 text-center md:px-8">
-            <h3 className="mb-2 font-[var(--font-dm-sans)] text-[15px] font-semibold text-[var(--text-primary)]">
-              🚚 Cash on Delivery
-            </h3>
-            <p className="text-[13.5px] leading-relaxed text-[var(--muted)]">
-              Pay when your order arrives — COD across cities nationwide.
-            </p>
-          </div>
-          <div className="feature-item bg-[var(--cream)] px-6 py-7 text-center md:px-8">
-            <h3 className="mb-2 font-[var(--font-dm-sans)] text-[15px] font-semibold text-[var(--text-primary)]">
-              📦 Nationwide delivery
-            </h3>
-            <p className="text-[13.5px] leading-relaxed text-[var(--muted)]">
-              Careful packing so your order reaches you in great shape.
-            </p>
-          </div>
-          <div className="feature-item bg-[var(--cream)] px-6 py-7 text-center md:px-8">
-            <h3 className="mb-2 font-[var(--font-dm-sans)] text-[15px] font-semibold text-[var(--text-primary)]">
-              💬 WhatsApp support
-            </h3>
-            <p className="text-[13.5px] leading-relaxed text-[var(--muted)]">
-              Questions and order help — we reply fast on WhatsApp.
-            </p>
-          </div>
-        </div>
+        <HomeHeroFanClient heroStripItems={heroStripItems} />
       </section>
 
-      <section className="bg-[var(--bg)] px-4 py-12 sm:px-6">
-        <AnimatedSection as="div" className="mx-auto max-w-6xl">
-          <h2 className="font-[var(--font-cormorant)] text-2xl font-semibold text-[var(--text-primary)]">
-            Shop by category
-          </h2>
-          <p className="mt-1 max-w-2xl text-[var(--muted)]">
-            Tap a category to see wall art, calligraphy, gifts, and more — each opens its collection page.
-          </p>
-          <div className="mt-8 md:mt-10">
-            <CategoryGrid collections={homepageCategories} coverBySlug={coverBySlug} />
-          </div>
-          <div className="mt-10 flex justify-center sm:mt-12">
-            <Link
-              href="/shop"
-              className="rounded-full border border-[var(--border-mid)] bg-[var(--off-white)]/90 px-6 py-3 font-[var(--font-dm-sans)] text-[13px] font-medium text-[var(--text-primary)] no-underline shadow-[var(--shadow-sm)] backdrop-blur-sm transition hover:border-[var(--border-accent)] hover:bg-[var(--bg-card)]"
-            >
-              Browse all wall art products →
-            </Link>
-          </div>
-        </AnimatedSection>
-      </section>
+      <HomeTrustStrip />
+      <HomeVoucherSection />
+
+      <HomeCategorySectionClient
+        homepageCategories={homepageCategories}
+        slidesBySlug={slidesBySlug}
+      />
 
       <WhyArtzen />
 

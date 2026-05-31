@@ -2,11 +2,15 @@
 
 import Link from "next/link";
 import { useCallback, useMemo, useState, useEffect } from "react";
-import { useCart } from "@/context/CartContext";
 import { useFavorites } from "@/context/FavoritesContext";
-import { trackAddToCart, trackViewItem } from "@/lib/analytics";
+import { trackViewItem } from "@/lib/analytics";
 import type { Product } from "@/lib/data";
 import { productDisplayName } from "@/lib/product-name";
+import {
+  buildProductOrderWhatsAppMessage,
+  getSiteOrigin,
+  whatsAppOrderLink,
+} from "@/lib/site";
 
 const FINISHES = [
   { name: "Natural", color: "#D4C4A8" },
@@ -42,7 +46,7 @@ function defaultLegacyMaterial(material?: string): (typeof LEGACY_MATERIALS)[num
   return "MDF Wood";
 }
 
-function CartIcon({ className }: { className?: string }) {
+function PhoneIcon({ className }: { className?: string }) {
   return (
     <svg
       className={className}
@@ -52,24 +56,7 @@ function CartIcon({ className }: { className?: string }) {
       strokeWidth={2}
       aria-hidden
     >
-      <circle cx="9" cy="21" r="1" />
-      <circle cx="20" cy="21" r="1" />
-      <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" />
-    </svg>
-  );
-}
-
-function CheckIcon({ className }: { className?: string }) {
-  return (
-    <svg
-      className={className}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={2.5}
-      aria-hidden
-    >
-      <polyline points="20 6 9 12 4 9" />
+      <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
     </svg>
   );
 }
@@ -100,7 +87,6 @@ export function ProductPdpPurchaseSection({
   discountPct: number;
   children: React.ReactNode;
 }) {
-  const { addItem } = useCart();
   const { toggleFavorite, isFavorite } = useFavorites();
 
   const opts = product.sizeOptions;
@@ -127,10 +113,44 @@ export function ProductPdpPurchaseSection({
   );
   const [finish, setFinish] = useState<string>("Natural");
   const [qty, setQty] = useState(1);
-  const [added, setAdded] = useState(false);
-  const [buyNowPending, setBuyNowPending] = useState(false);
 
   const fav = isFavorite(product.id);
+
+  const orderName = useMemo(() => {
+    if (hasPdfSizes && selected) {
+      return `${productDisplayName(product)} — ${selected.label}`;
+    }
+    return productDisplayName(product);
+  }, [hasPdfSizes, selected, product]);
+
+  const orderHref = useMemo(() => {
+    const sizeLabel = hasPdfSizes
+      ? selected?.label
+      : `${legacySize}${product.dimensions ? ` (${product.dimensions})` : ""}`;
+    const materialLabel = hasPdfSizes ? displayMaterial : legacyMaterial;
+    return whatsAppOrderLink(
+      buildProductOrderWhatsAppMessage({
+        productName: orderName,
+        productUrl: `${getSiteOrigin()}/products/${product.slug}`,
+        price: hasPdfSizes ? displayPrice : product.price,
+        quantity: qty,
+        size: sizeLabel,
+        material: materialLabel ?? undefined,
+        finish,
+      })
+    );
+  }, [
+    hasPdfSizes,
+    selected,
+    product,
+    orderName,
+    displayPrice,
+    qty,
+    legacySize,
+    legacyMaterial,
+    displayMaterial,
+    finish,
+  ]);
 
   const payload = useMemo(() => {
     if (hasPdfSizes && selected) {
@@ -162,32 +182,6 @@ export function ProductPdpPurchaseSection({
   const bumpQty = useCallback((delta: number) => {
     setQty((q) => Math.max(1, Math.min(99, q + delta)));
   }, []);
-
-  const handleAdd = useCallback(() => {
-    if (added) return;
-    addItem(payload, qty);
-    trackAddToCart({
-      item_id: payload.id,
-      item_name: payload.name,
-      price: payload.price,
-      quantity: qty,
-    });
-    setAdded(true);
-    window.setTimeout(() => setAdded(false), 2200);
-  }, [addItem, payload, qty, added]);
-
-  const handleBuyNow = useCallback(() => {
-    if (buyNowPending) return;
-    setBuyNowPending(true);
-    addItem(payload, qty);
-    trackAddToCart({
-      item_id: payload.id,
-      item_name: payload.name,
-      price: payload.price,
-      quantity: qty,
-    });
-    window.setTimeout(() => setBuyNowPending(false), 1500);
-  }, [addItem, payload, qty, buyNowPending]);
 
   return (
     <>
@@ -361,41 +355,15 @@ export function ProductPdpPurchaseSection({
             </button>
           </div>
 
-          <button
-            type="button"
-            onClick={handleAdd}
-            disabled={added}
-            className={`flex h-[50px] min-w-0 flex-1 items-center justify-center gap-2 rounded-[var(--radius-md)] border-0 font-[var(--font-dm-sans)] text-[14px] font-medium text-[var(--off-white)] transition-[background,transform] sm:min-w-[140px] ${
-              added
-                ? "bg-[var(--sage-deep)]"
-                : "bg-[var(--slate)] hover:bg-[var(--slate-soft)] active:scale-[0.98]"
-            }`}
+          <a
+            href={orderHref}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex h-[50px] min-w-0 flex-1 items-center justify-center gap-2 rounded-[var(--radius-md)] border-0 bg-[var(--slate)] font-[var(--font-dm-sans)] text-[14px] font-medium text-[var(--off-white)] no-underline transition-[background,transform] hover:bg-[var(--slate-soft)] active:scale-[0.98] sm:min-w-[180px]"
           >
-            {added ? (
-              <>
-                <CheckIcon className="h-4 w-4" />
-                Added!
-              </>
-            ) : (
-              <>
-                <CartIcon className="h-4 w-4" />
-                Add to Cart
-              </>
-            )}
-          </button>
-
-          <Link
-            href="/checkout"
-            onClick={handleBuyNow}
-            aria-disabled={buyNowPending}
-            className={`flex h-[50px] min-w-0 flex-1 items-center justify-center rounded-[var(--radius-md)] border-0 font-[var(--font-dm-sans)] text-[14px] font-medium text-white no-underline transition-[background,transform] sm:min-w-[120px] ${
-              buyNowPending
-                ? "pointer-events-none bg-[var(--sage-light)] opacity-80"
-                : "bg-[var(--sage)] hover:bg-[var(--sage-light)] active:scale-[0.98]"
-            }`}
-          >
-            {buyNowPending ? "Opening checkout..." : "Buy Now"}
-          </Link>
+            <PhoneIcon className="h-4 w-4" />
+            Call to Order
+          </a>
 
           <button
             type="button"
@@ -421,26 +389,15 @@ export function ProductPdpPurchaseSection({
         }}
         aria-label="Quick purchase actions"
       >
-        <button
-          type="button"
-          onClick={handleAdd}
-          disabled={added}
-          className="h-[50px] flex-1 rounded-[var(--radius-md)] border-0 bg-[var(--slate)] font-[var(--font-dm-sans)] text-[14.5px] font-medium text-[var(--off-white)]"
+        <a
+          href={orderHref}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex h-[50px] flex-1 items-center justify-center gap-2 rounded-[var(--radius-md)] bg-[var(--slate)] font-[var(--font-dm-sans)] text-[14.5px] font-medium text-[var(--off-white)] no-underline"
         >
-          {added ? "Added!" : "Add to Cart"}
-        </button>
-        <Link
-          href="/checkout"
-          onClick={handleBuyNow}
-          aria-disabled={buyNowPending}
-          className={`flex h-[50px] flex-1 items-center justify-center rounded-[var(--radius-md)] font-[var(--font-dm-sans)] text-[14.5px] font-medium text-white no-underline ${
-            buyNowPending
-              ? "pointer-events-none bg-[var(--sage-light)] opacity-80"
-              : "bg-[var(--sage)]"
-          }`}
-        >
-          {buyNowPending ? "Opening..." : "Buy Now"}
-        </Link>
+          <PhoneIcon className="h-4 w-4" />
+          Call to Order
+        </a>
       </div>
     </>
   );

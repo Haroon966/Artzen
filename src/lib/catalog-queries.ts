@@ -85,6 +85,41 @@ export function getCollectionCoverImageFrom(
   return getProductByIdFrom(products, id)?.image;
 }
 
+/** True when the URL path ends in `.png` (ignores query), for skipping flat packshots. */
+export function productCatalogImageUrlIsPng(url: string): boolean {
+  return /\.png(\?|$)/i.test(url);
+}
+
+/**
+ * Unique product images for category tiles (carousel); order follows collection products.
+ * PNG URLs are omitted (packshots / flat assets).
+ */
+export function getCollectionCategoryCardSlideImagesFrom(
+  products: Product[],
+  collections: Collection[],
+  collection: Collection,
+  limit = 14
+): string[] {
+  const prods = getProductsByCollectionFrom(products, collections, collection.slug);
+  const urls: string[] = [];
+  const seen = new Set<string>();
+  const push = (u: string | undefined) => {
+    if (!u || seen.has(u) || productCatalogImageUrlIsPng(u)) return;
+    seen.add(u);
+    urls.push(u);
+  };
+  for (const p of prods) {
+    const gallery = (p.images ?? []).filter(Boolean) as string[];
+    const primary = p.cardImage || gallery[0] || p.image;
+    const mockup = p.hoverImage || (gallery.length > 1 ? gallery[1] : null);
+    push(primary);
+    push(mockup ?? undefined);
+    for (const u of gallery) push(u);
+    if (urls.length >= limit) return urls.slice(0, limit);
+  }
+  return urls;
+}
+
 /**
  * Cover image for homepage category tiles: for wall-decoration, prefer a lifestyle/mockup
  * (hoverImage, second gallery asset, or first non-PNG) over the flat PNG packshot.

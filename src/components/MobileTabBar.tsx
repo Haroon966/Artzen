@@ -3,11 +3,12 @@
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useState } from "react";
-import { useCart } from "@/context/CartContext";
+import { getWhatsAppPhoneDigits } from "@/lib/site";
 
 const focusRing =
   "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--sage)]";
+
+const ORDER_HREF = `https://wa.me/${getWhatsAppPhoneDigits()}?text=${encodeURIComponent("Hi Artzens — I'd like to place an order.")}`;
 
 function ShopIcon({ className }: { className?: string }) {
   return (
@@ -19,12 +20,10 @@ function ShopIcon({ className }: { className?: string }) {
   );
 }
 
-function CartIcon({ className }: { className?: string }) {
+function PhoneIcon({ className }: { className?: string }) {
   return (
     <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} aria-hidden>
-      <circle cx="9" cy="21" r="1" />
-      <circle cx="20" cy="21" r="1" />
-      <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   );
 }
@@ -48,20 +47,12 @@ function UserIcon({ className }: { className?: string }) {
 
 export function MobileTabBar() {
   const pathname = usePathname();
-  const { totalItems } = useCart();
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
   const homeActive = pathname === "/";
   const shopActive =
     pathname.startsWith("/shop") ||
     pathname.startsWith("/collections") ||
     pathname.startsWith("/products");
-  const cartActive =
-    pathname.startsWith("/cart") || pathname.startsWith("/checkout");
   const favActive = pathname.startsWith("/favorites");
   const profileActive = pathname.startsWith("/profile");
 
@@ -102,19 +93,16 @@ export function MobileTabBar() {
         <span className="font-[var(--font-dm-sans)] text-[10px] font-medium tracking-wide">Shop</span>
       </Link>
 
-      <Link
-        href="/cart"
-        className={`${tabClass(cartActive)} no-underline`}
-        aria-current={cartActive ? "page" : undefined}
+      <a
+        href={ORDER_HREF}
+        target="_blank"
+        rel="noopener noreferrer"
+        className={`${tabClass(false)} no-underline`}
+        aria-label="Call to order on WhatsApp"
       >
-        <span className="relative inline-flex">
-          <CartIcon className="h-[22px] w-[22px] shrink-0" />
-          {mounted && totalItems > 0 && (
-            <span className="mobile-tab-bar__badge">{totalItems > 99 ? "99+" : totalItems}</span>
-          )}
-        </span>
-        <span className="font-[var(--font-dm-sans)] text-[10px] font-medium tracking-wide">Cart</span>
-      </Link>
+        <PhoneIcon className="h-[22px] w-[22px] shrink-0" />
+        <span className="font-[var(--font-dm-sans)] text-[10px] font-medium tracking-wide">Order</span>
+      </a>
 
       <Link
         href="/favorites"

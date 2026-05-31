@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useState, useCallback, memo } from "react";
+import { useCallback, memo } from "react";
 import type { Product } from "@/lib/data";
 import type { ShopListProduct } from "@/lib/shop-list-product";
 import {
@@ -11,9 +11,13 @@ import {
   PRODUCT_SLUGS_NEW_BADGE,
 } from "@/lib/data";
 import { productDisplayName } from "@/lib/product-name";
-import { useCart } from "@/context/CartContext";
 import { useFavorites } from "@/context/FavoritesContext";
-import { trackAddToCart, trackSelectItem } from "@/lib/analytics";
+import { trackSelectItem } from "@/lib/analytics";
+import {
+  buildProductOrderWhatsAppMessage,
+  getSiteOrigin,
+  whatsAppOrderLink,
+} from "@/lib/site";
 import { CatalogImageWatermark } from "@/components/CatalogImageWatermark";
 import {
   catalogImageProtectClassName,
@@ -30,15 +34,13 @@ type ProductCardModel = Product | ShopListProduct;
 
 function cartPayload(product: ProductCardModel) {
   return {
-    id: product.id,
-    slug: product.slug,
     name: productDisplayName(product),
     price: product.price,
-    image: product.image,
+    slug: product.slug,
   };
 }
 
-function CartIcon({ className }: { className?: string }) {
+function PhoneIcon({ className }: { className?: string }) {
   return (
     <svg
       className={className}
@@ -48,24 +50,7 @@ function CartIcon({ className }: { className?: string }) {
       strokeWidth={2}
       aria-hidden
     >
-      <circle cx="9" cy="21" r="1" />
-      <circle cx="20" cy="21" r="1" />
-      <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" />
-    </svg>
-  );
-}
-
-function CheckIcon({ className }: { className?: string }) {
-  return (
-    <svg
-      className={className}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={2.5}
-      aria-hidden
-    >
-      <polyline points="20 6 9 12 4 9" />
+      <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
     </svg>
   );
 }
@@ -77,9 +62,7 @@ function ProductCardInner({
   product: ProductCardModel;
   itemIndex?: number;
 }) {
-  const { addItem } = useCart();
   const { toggleFavorite, isFavorite } = useFavorites();
-  const [addedFlash, setAddedFlash] = useState(false);
 
   const onSale =
     product.originalPrice != null && product.originalPrice > product.price;
@@ -106,23 +89,13 @@ function ProductCardInner({
   const cardMockup = product.hoverImage || (gallery.length > 1 ? gallery[1] : null);
   const showHoverMockup = cardMockup != null && cardMockup !== cardPrimary;
 
-  const handleAddCart = useCallback(
-    (e: React.MouseEvent) => {
-      e.preventDefault();
-      e.stopPropagation();
-      if (addedFlash) return;
-      const payload = cartPayload(product);
-      addItem(payload);
-      trackAddToCart({
-        item_id: payload.id,
-        item_name: payload.name,
-        price: payload.price,
-        quantity: 1,
-      });
-      setAddedFlash(true);
-      window.setTimeout(() => setAddedFlash(false), 2000);
-    },
-    [addItem, product, addedFlash]
+  const orderHref = whatsAppOrderLink(
+    buildProductOrderWhatsAppMessage({
+      productName: cartPayload(product).name,
+      productUrl: `${getSiteOrigin()}/products/${product.slug}`,
+      price: product.price,
+      quantity: 1,
+    })
   );
 
   const handleFav = useCallback(
@@ -221,27 +194,17 @@ function ProductCardInner({
           </svg>
         </button>
 
-        <button
-          type="button"
-          onClick={handleAddCart}
-          disabled={addedFlash}
-          className={`absolute bottom-0 left-0 right-0 z-[3] flex h-11 items-center justify-center gap-2 font-[var(--font-dm-sans)] text-[13px] font-medium text-white transition-[transform,background-color] duration-300 ease-out max-lg:translate-y-0 lg:translate-y-full lg:group-hover:translate-y-0 ${
-            addedFlash ? "bg-[#2d6a4f] lg:translate-y-0" : "bg-coffee-bean hover:bg-coffee-hover"
-          }`}
-          aria-label={addedFlash ? "Added to cart" : "Add to cart"}
+        <a
+          href={orderHref}
+          target="_blank"
+          rel="noopener noreferrer"
+          onClick={(e) => e.stopPropagation()}
+          className="absolute bottom-0 left-0 right-0 z-[3] flex h-11 items-center justify-center gap-2 bg-coffee-bean font-[var(--font-dm-sans)] text-[13px] font-medium text-white no-underline transition-[transform,background-color] duration-300 ease-out hover:bg-coffee-hover max-lg:translate-y-0 lg:translate-y-full lg:group-hover:translate-y-0"
+          aria-label="Call to order on WhatsApp"
         >
-          {addedFlash ? (
-            <>
-              <CheckIcon className="h-3.5 w-3.5" />
-              Added!
-            </>
-          ) : (
-            <>
-              <CartIcon className="h-3.5 w-3.5" />
-              Add to Cart
-            </>
-          )}
-        </button>
+          <PhoneIcon className="h-3.5 w-3.5" />
+          Call to Order
+        </a>
       </div>
 
       <div className="flex flex-1 flex-col px-4 pb-[18px] pt-3.5">

@@ -14,6 +14,7 @@ import { AnnouncementBar } from "@/components/AnnouncementBar";
 import { SiteHeader } from "@/components/SiteHeader";
 import { SiteFooter } from "@/components/SiteFooter";
 import { ClientCartWrapper } from "@/components/ClientCartWrapper";
+import { CatalogLiveProvider } from "@/context/CatalogLiveContext";
 import { GoogleAnalytics } from "@/components/GoogleAnalytics";
 import { MobileTabBar } from "@/components/MobileTabBar";
 import { WhatsAppFloat } from "@/components/WhatsAppFloat";
@@ -167,14 +168,16 @@ export default function RootLayout({
       </head>
       <body className="min-h-screen bg-cream text-muted antialiased">
         <GoogleAnalytics />
-        <ClientCartWrapper>
-          <AnnouncementBar />
-          <SiteHeader />
-          <main className="site-main">{children}</main>
-          <SiteFooter />
-          <MobileTabBar />
-          <WhatsAppFloat />
-        </ClientCartWrapper>
+        <CatalogLiveProvider>
+          <ClientCartWrapper>
+            <AnnouncementBar />
+            <SiteHeader />
+            <main className="site-main">{children}</main>
+            <SiteFooter />
+            <MobileTabBar />
+            <WhatsAppFloat />
+          </ClientCartWrapper>
+        </CatalogLiveProvider>
       </body>
     </html>
   );

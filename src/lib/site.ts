@@ -77,3 +77,28 @@ export function whatsAppOrderLink(message: string): string {
   }
   return `${prefix}${encodeURIComponent(`Hi ${SITE_BRAND} — I'd like to place an order.`)}`;
 }
+
+/** Pre-filled WhatsApp message for a single product order inquiry. */
+export function buildProductOrderWhatsAppMessage(options: {
+  productName: string;
+  productUrl?: string;
+  price?: number;
+  quantity?: number;
+  size?: string;
+  material?: string;
+  finish?: string;
+}): string {
+  const lines = [`Hi ${SITE_BRAND} — I'd like to order:`];
+  lines.push(options.productName);
+  if (options.size) lines.push(`Size: ${options.size}`);
+  if (options.material) lines.push(`Material: ${options.material}`);
+  if (options.finish) lines.push(`Finish: ${options.finish}`);
+  if (options.quantity != null && options.quantity > 1) {
+    lines.push(`Qty: ${options.quantity}`);
+  }
+  if (options.price != null) {
+    lines.push(`Price: Rs. ${options.price.toLocaleString("en-PK")}`);
+  }
+  if (options.productUrl) lines.push(options.productUrl);
+  return lines.join("\n");
+}

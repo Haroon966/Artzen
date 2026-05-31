@@ -31,7 +31,7 @@ export function FavoritesClient({ catalogProducts }: { catalogProducts: Product[
           Favorites
         </h1>
         <p className="mt-2 max-w-lg font-[var(--font-dm-sans)] text-[15px] font-light text-muted">
-          Pieces you&apos;ve saved. Add to cart or buy anytime.
+          Pieces you&apos;ve saved. Call to order anytime.
         </p>
 
         {products.length === 0 ? (
