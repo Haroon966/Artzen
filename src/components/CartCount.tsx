@@ -13,7 +13,7 @@ export function CartCount() {
 
   if (!mounted || totalItems <= 0) return null;
   return (
-    <span className="cart-count-badge flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-[var(--gold)] px-1 text-[10px] font-bold text-[var(--dark)]">
+    <span className="flex h-[18px] w-[18px] items-center justify-center rounded-full bg-[var(--gold)] text-[10px] font-bold text-[var(--dark)]">
       {totalItems}
     </span>
   );

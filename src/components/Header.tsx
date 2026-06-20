@@ -12,7 +12,6 @@ import {
   Suspense,
 } from "react";
 import { FavoriteCount } from "@/components/FavoriteCount";
-import { CartNavLink } from "@/components/CartNavLink";
 import { NavCategoriesDropdown } from "@/components/NavCategoriesDropdown";
 import { getNavCategoryLinks } from "@/lib/data";
 import { useMobileNav } from "@/context/MobileNavContext";
@@ -407,7 +406,6 @@ function HeaderInner({ categoryLinks }: { categoryLinks: NavLinkItem[] }) {
                   <NavSearchIcon />
                 </button>
                 <div className="flex shrink-0 items-center gap-2">
-                <CartNavLink className={iconBtn} />
                 <Link
                   href="/favorites"
                   className={`relative ${iconBtn}`}
@@ -603,7 +601,6 @@ function HeaderInner({ categoryLinks }: { categoryLinks: NavLinkItem[] }) {
                   />
                 </form>
               )}
-              <CartNavLink className={iconBtn} />
               <Link
                 href="/favorites"
                 className={`relative ${iconBtn}`}

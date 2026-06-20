@@ -11,9 +11,13 @@ import {
   PRODUCT_SLUGS_NEW_BADGE,
 } from "@/lib/data";
 import { productDisplayName } from "@/lib/product-name";
-import { useCart } from "@/context/CartContext";
 import { useFavorites } from "@/context/FavoritesContext";
-import { trackAddToCart, trackSelectItem } from "@/lib/analytics";
+import { trackSelectItem } from "@/lib/analytics";
+import {
+  buildProductOrderWhatsAppMessage,
+  getSiteOrigin,
+  whatsAppOrderLink,
+} from "@/lib/site";
 import { CatalogImageWatermark } from "@/components/CatalogImageWatermark";
 import {
   catalogImageProtectClassName,
@@ -29,19 +33,14 @@ function formatPrice(price: number) {
 type ProductCardModel = Product | ShopListProduct;
 
 function cartPayload(product: ProductCardModel) {
-  const gallery =
-    product.images && product.images.length > 0 ? product.images : [product.image];
-  const cardPrimary = product.cardImage || gallery[0] || product.image;
   return {
-    id: product.id,
-    slug: product.slug,
     name: productDisplayName(product),
     price: product.price,
-    image: cardPrimary,
+    slug: product.slug,
   };
 }
 
-function CartIcon({ className }: { className?: string }) {
+function PhoneIcon({ className }: { className?: string }) {
   return (
     <svg
       className={className}
@@ -51,9 +50,7 @@ function CartIcon({ className }: { className?: string }) {
       strokeWidth={2}
       aria-hidden
     >
-      <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z" strokeLinecap="round" strokeLinejoin="round" />
-      <line x1="3" y1="6" x2="21" y2="6" strokeLinecap="round" />
-      <path d="M16 10a4 4 0 0 1-8 0" strokeLinecap="round" />
+      <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
     </svg>
   );
 }
@@ -65,7 +62,6 @@ function ProductCardInner({
   product: ProductCardModel;
   itemIndex?: number;
 }) {
-  const { addItem, hasProductSlug } = useCart();
   const { toggleFavorite, isFavorite } = useFavorites();
 
   const onSale =
@@ -93,32 +89,14 @@ function ProductCardInner({
   const cardMockup = product.hoverImage || (gallery.length > 1 ? gallery[1] : null);
   const showHoverMockup = cardMockup != null && cardMockup !== cardPrimary;
 
-  const inCart = hasProductSlug(product.slug);
-  const cartItem = cartPayload(product);
-
-  const handleAddToCart = useCallback(
-    (e: React.MouseEvent) => {
-      e.preventDefault();
-      e.stopPropagation();
-      addItem(cartItem, 1);
-      trackAddToCart({
-        item_id: cartItem.id,
-        item_name: cartItem.name,
-        price: cartItem.price,
-        quantity: 1,
-      });
-    },
-    [addItem, cartItem]
-  );
-
-  const handleSelect = useCallback(() => {
-    trackSelectItem({
-      item_id: product.id,
-      item_name: title,
+  const orderHref = whatsAppOrderLink(
+    buildProductOrderWhatsAppMessage({
+      productName: cartPayload(product).name,
+      productUrl: `${getSiteOrigin()}/products/${product.slug}`,
       price: product.price,
-      index: itemIndex,
-    });
-  }, [product.id, product.price, title, itemIndex]);
+      quantity: 1,
+    })
+  );
 
   const handleFav = useCallback(
     (e: React.MouseEvent) => {
@@ -129,8 +107,14 @@ function ProductCardInner({
     [toggleFavorite, product.id]
   );
 
-  const cartActionClass =
-    "absolute bottom-0 left-0 right-0 z-[3] flex h-11 items-center justify-center gap-2 font-[var(--font-dm-sans)] text-[13px] font-medium no-underline transition-[transform,background-color] duration-300 ease-out max-lg:translate-y-0 lg:translate-y-full lg:group-hover:translate-y-0";
+  const handleSelect = useCallback(() => {
+    trackSelectItem({
+      item_id: product.id,
+      item_name: title,
+      price: product.price,
+      index: itemIndex,
+    });
+  }, [product.id, product.price, title, itemIndex]);
 
   return (
     <article
@@ -210,27 +194,17 @@ function ProductCardInner({
           </svg>
         </button>
 
-        {inCart ? (
-          <Link
-            href="/cart"
-            onClick={(e) => e.stopPropagation()}
-            className={`${cartActionClass} bg-[var(--golden-earth)] text-coffee-bean hover:bg-[var(--gold2)]`}
-            aria-label={`Go to cart — ${title} is in your cart`}
-          >
-            <CartIcon className="h-3.5 w-3.5" />
-            Go to cart
-          </Link>
-        ) : (
-          <button
-            type="button"
-            onClick={handleAddToCart}
-            className={`${cartActionClass} border-0 bg-coffee-bean text-white hover:bg-coffee-hover`}
-            aria-label={`Add ${title} to cart`}
-          >
-            <CartIcon className="h-3.5 w-3.5" />
-            Add to cart
-          </button>
-        )}
+        <a
+          href={orderHref}
+          target="_blank"
+          rel="noopener noreferrer"
+          onClick={(e) => e.stopPropagation()}
+          className="absolute bottom-0 left-0 right-0 z-[3] flex h-11 items-center justify-center gap-2 bg-coffee-bean font-[var(--font-dm-sans)] text-[13px] font-medium text-white no-underline transition-[transform,background-color] duration-300 ease-out hover:bg-coffee-hover max-lg:translate-y-0 lg:translate-y-full lg:group-hover:translate-y-0"
+          aria-label="Call to order on WhatsApp"
+        >
+          <PhoneIcon className="h-3.5 w-3.5" />
+          Call to Order
+        </a>
       </div>
 
       <div className="flex flex-1 flex-col px-4 pb-[18px] pt-3.5">

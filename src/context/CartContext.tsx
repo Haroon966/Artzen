@@ -25,7 +25,6 @@ interface CartContextValue {
   totalItems: number;
   totalPrice: number;
   clearCart: () => void;
-  hasProductSlug: (slug: string) => boolean;
 }
 
 const CartContext = createContext<CartContextValue | null>(null);
@@ -113,11 +112,6 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     [items]
   );
 
-  const hasProductSlug = useCallback(
-    (slug: string) => items.some((i) => i.slug === slug),
-    [items]
-  );
-
   const value = useMemo(
     () => ({
       items,
@@ -127,7 +121,6 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       totalItems,
       totalPrice,
       clearCart,
-      hasProductSlug,
     }),
     [
       items,
@@ -137,7 +130,6 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       totalItems,
       totalPrice,
       clearCart,
-      hasProductSlug,
     ]
   );
 

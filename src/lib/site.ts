@@ -102,37 +102,3 @@ export function buildProductOrderWhatsAppMessage(options: {
   if (options.productUrl) lines.push(options.productUrl);
   return lines.join("\n");
 }
-
-function formatPricePkr(price: number): string {
-  return `Rs. ${price.toLocaleString("en-PK")}`;
-}
-
-/** Pre-filled WhatsApp message for a multi-item cart order. */
-export function buildCartWhatsAppMessage(
-  items: Array<{ slug: string; name: string; price: number; quantity: number }>,
-  totalPrice: number,
-  city?: string,
-  deliveryEstimate?: string
-): string {
-  const origin = getSiteOrigin();
-  const lines = [`Hi ${SITE_BRAND} — I'd like to order:`, "", "Items:"];
-
-  items.forEach((item, index) => {
-    const lineTotal = item.price * item.quantity;
-    lines.push(`${index + 1}. ${item.name}`);
-    lines.push(
-      `   Qty: ${item.quantity} × ${formatPricePkr(item.price)} = ${formatPricePkr(lineTotal)}`
-    );
-    lines.push(`   ${origin}/products/${item.slug}`);
-    if (index < items.length - 1) lines.push("");
-  });
-
-  lines.push("", `Total: ${formatPricePkr(totalPrice)}`);
-  if (city?.trim()) {
-    lines.push(`City: ${city.trim()}`);
-  }
-  if (deliveryEstimate?.trim()) {
-    lines.push(`Estimated delivery: ${deliveryEstimate.trim()}`);
-  }
-  return lines.join("\n");
-}

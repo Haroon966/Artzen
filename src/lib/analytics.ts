@@ -147,7 +147,7 @@ export function trackCheckoutSubmitFailed(
   gtagEvent("checkout_submit_failed", { reason });
 }
 
-export function trackWhatsAppOpenAttempt(source: "success" | "fallback" | "reopen" | "cart") {
+export function trackWhatsAppOpenAttempt(source: "success" | "fallback" | "reopen") {
   gtagEvent("whatsapp_open_attempt", { source });
 }
 

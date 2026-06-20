@@ -34,31 +34,6 @@ test.describe("Shop to checkout", () => {
     await expect(page.getByLabel(/full name/i)).toBeVisible();
   });
 
-  test("shop → add to cart → cart WhatsApp link includes order total", async ({ page }) => {
-    await page.goto("/shop/", { waitUntil: "load" });
-
-    const productLink = await firstProductCardLink(page);
-    await productLink.click();
-    await expect(page).toHaveURL(/\/products\//, { timeout: 15_000 });
-
-    await page
-      .locator("main")
-      .getByRole("button", { name: /add to cart/i })
-      .first()
-      .click();
-
-    await page.goto("/cart/", { waitUntil: "load" });
-
-    const whatsAppLink = page
-      .locator("main")
-      .getByRole("link", { name: "Order on WhatsApp", exact: true });
-    await expect(whatsAppLink).toBeVisible();
-    await expect(whatsAppLink).toHaveAttribute("href", /wa\.me/);
-
-    const href = await whatsAppLink.getAttribute("href");
-    expect(href).toMatch(/Total%3A/);
-  });
-
   test("checkout with empty cart shows message", async ({ page }) => {
     await page.goto("/");
     await page.evaluate(() => {
