@@ -1,9 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useMemo, useState, useEffect } from "react";
+import { useCallback, useMemo, useState, useEffect, useRef } from "react";
+import { useCart } from "@/context/CartContext";
 import { useFavorites } from "@/context/FavoritesContext";
-import { trackViewItem } from "@/lib/analytics";
+import { trackAddToCart, trackViewItem } from "@/lib/analytics";
 import type { Product } from "@/lib/data";
 import { productDisplayName } from "@/lib/product-name";
 import {
@@ -61,6 +62,23 @@ function PhoneIcon({ className }: { className?: string }) {
   );
 }
 
+function CartIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      className={className}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2}
+      aria-hidden
+    >
+      <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z" strokeLinecap="round" strokeLinejoin="round" />
+      <line x1="3" y1="6" x2="21" y2="6" strokeLinecap="round" />
+      <path d="M16 10a4 4 0 0 1-8 0" strokeLinecap="round" />
+    </svg>
+  );
+}
+
 function HeartIcon({ className, filled }: { className?: string; filled?: boolean }) {
   return (
     <svg
@@ -87,7 +105,9 @@ export function ProductPdpPurchaseSection({
   discountPct: number;
   children: React.ReactNode;
 }) {
+  const { addItem, hasProductSlug } = useCart();
   const { toggleFavorite, isFavorite } = useFavorites();
+  const addedTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const opts = product.sizeOptions;
   const hasPdfSizes = opts != null && opts.length > 0;
@@ -113,8 +133,10 @@ export function ProductPdpPurchaseSection({
   );
   const [finish, setFinish] = useState<string>("Natural");
   const [qty, setQty] = useState(1);
+  const [justAdded, setJustAdded] = useState(false);
 
   const fav = isFavorite(product.id);
+  const inCart = hasProductSlug(product.slug);
 
   const orderName = useMemo(() => {
     if (hasPdfSizes && selected) {
@@ -154,22 +176,31 @@ export function ProductPdpPurchaseSection({
 
   const payload = useMemo(() => {
     if (hasPdfSizes && selected) {
+      const materialLabel = displayMaterial ?? "MDF";
       return {
-        id: `${product.id}::${selected.id}`,
+        id: `${product.id}::${selected.id}::${finish}`,
         slug: product.slug,
-        name: `${productDisplayName(product)} — ${selected.label}`,
+        name: `${productDisplayName(product)} — ${selected.label} (${materialLabel}, ${finish})`,
         price: selected.price,
         image: product.image,
       };
     }
     return {
-      id: product.id,
+      id: `${product.id}::${legacySize}::${legacyMaterial}::${finish}`,
       slug: product.slug,
-      name: productDisplayName(product),
+      name: `${productDisplayName(product)} (${legacySize}, ${legacyMaterial}, ${finish})`,
       price: product.price,
       image: product.image,
     };
-  }, [hasPdfSizes, selected, product]);
+  }, [
+    hasPdfSizes,
+    selected,
+    product,
+    displayMaterial,
+    legacySize,
+    legacyMaterial,
+    finish,
+  ]);
 
   useEffect(() => {
     trackViewItem({
@@ -181,6 +212,25 @@ export function ProductPdpPurchaseSection({
 
   const bumpQty = useCallback((delta: number) => {
     setQty((q) => Math.max(1, Math.min(99, q + delta)));
+  }, []);
+
+  const handleAddToCart = useCallback(() => {
+    addItem(payload, qty);
+    trackAddToCart({
+      item_id: payload.id,
+      item_name: payload.name,
+      price: payload.price,
+      quantity: qty,
+    });
+    setJustAdded(true);
+    if (addedTimeoutRef.current) clearTimeout(addedTimeoutRef.current);
+    addedTimeoutRef.current = setTimeout(() => setJustAdded(false), 2000);
+  }, [addItem, payload, qty]);
+
+  useEffect(() => {
+    return () => {
+      if (addedTimeoutRef.current) clearTimeout(addedTimeoutRef.current);
+    };
   }, []);
 
   return (
@@ -355,14 +405,37 @@ export function ProductPdpPurchaseSection({
             </button>
           </div>
 
+          {inCart && !justAdded ? (
+            <Link
+              href="/cart"
+              className="flex h-[50px] min-w-0 flex-1 items-center justify-center gap-2 rounded-[var(--radius-md)] border-0 bg-[var(--sage)] font-[var(--font-dm-sans)] text-[14px] font-medium text-[var(--off-white)] no-underline transition-[background,transform] hover:bg-[var(--sage-deep)] active:scale-[0.98] sm:min-w-[180px]"
+            >
+              <CartIcon className="h-4 w-4" />
+              Go to cart
+            </Link>
+          ) : (
+            <button
+              type="button"
+              onClick={handleAddToCart}
+              className={`flex h-[50px] min-w-0 flex-1 items-center justify-center gap-2 rounded-[var(--radius-md)] border-0 font-[var(--font-dm-sans)] text-[14px] font-medium transition-[background,transform] active:scale-[0.98] sm:min-w-[180px] ${
+                justAdded
+                  ? "bg-[var(--sage)] text-[var(--off-white)]"
+                  : "bg-[var(--gold)] text-[var(--dark)] hover:bg-[var(--gold2)]"
+              }`}
+            >
+              <CartIcon className="h-4 w-4" />
+              {justAdded ? "Added" : "Add to cart"}
+            </button>
+          )}
+
           <a
             href={orderHref}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex h-[50px] min-w-0 flex-1 items-center justify-center gap-2 rounded-[var(--radius-md)] border-0 bg-[var(--slate)] font-[var(--font-dm-sans)] text-[14px] font-medium text-[var(--off-white)] no-underline transition-[background,transform] hover:bg-[var(--slate-soft)] active:scale-[0.98] sm:min-w-[180px]"
+            className="flex h-[50px] shrink-0 items-center justify-center gap-2 rounded-[var(--radius-md)] border border-[var(--border-mid)] bg-[var(--bg-card)] px-4 font-[var(--font-dm-sans)] text-[13px] font-medium text-[var(--slate)] no-underline transition-[background,transform] hover:bg-[var(--off-white-mid)] active:scale-[0.98]"
           >
             <PhoneIcon className="h-4 w-4" />
-            Call to Order
+            <span className="hidden sm:inline">Call to Order</span>
           </a>
 
           <button
@@ -389,14 +462,36 @@ export function ProductPdpPurchaseSection({
         }}
         aria-label="Quick purchase actions"
       >
+        {inCart && !justAdded ? (
+          <Link
+            href="/cart"
+            className="flex h-[50px] flex-1 items-center justify-center gap-2 rounded-[var(--radius-md)] bg-[var(--sage)] font-[var(--font-dm-sans)] text-[14.5px] font-medium text-[var(--off-white)] no-underline"
+          >
+            <CartIcon className="h-4 w-4" />
+            Go to cart
+          </Link>
+        ) : (
+          <button
+            type="button"
+            onClick={handleAddToCart}
+            className={`flex h-[50px] flex-1 items-center justify-center gap-2 rounded-[var(--radius-md)] font-[var(--font-dm-sans)] text-[14.5px] font-medium ${
+              justAdded
+                ? "bg-[var(--sage)] text-[var(--off-white)]"
+                : "bg-[var(--gold)] text-[var(--dark)]"
+            }`}
+          >
+            <CartIcon className="h-4 w-4" />
+            {justAdded ? "Added" : "Add to cart"}
+          </button>
+        )}
         <a
           href={orderHref}
           target="_blank"
           rel="noopener noreferrer"
-          className="flex h-[50px] flex-1 items-center justify-center gap-2 rounded-[var(--radius-md)] bg-[var(--slate)] font-[var(--font-dm-sans)] text-[14.5px] font-medium text-[var(--off-white)] no-underline"
+          className="flex h-[50px] w-[50px] shrink-0 items-center justify-center rounded-[var(--radius-md)] border border-[var(--border-mid)] bg-[var(--bg-card)] text-[var(--slate)] no-underline"
+          aria-label="Call to order on WhatsApp"
         >
           <PhoneIcon className="h-4 w-4" />
-          Call to Order
         </a>
       </div>
     </>

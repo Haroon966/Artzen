@@ -5,7 +5,7 @@ import { CartContent } from "./CartContent";
 
 export const metadata: Metadata = {
   title: "Cart",
-  description: `Your cart at ${SITE_BRAND}. Review items and checkout with Cash on Delivery.`,
+  description: `Your cart at ${SITE_BRAND}. Review items and order on WhatsApp with Cash on Delivery.`,
   alternates: { canonical: `${getSiteOrigin()}/cart` },
   robots: { index: false, follow: true },
 };
@@ -54,7 +54,7 @@ export default function CartPage() {
             Your cart
           </h1>
           <p className="mt-3 max-w-md font-[var(--font-dm-sans)] text-[15px] font-light leading-relaxed text-[var(--muted)]">
-            Review your order — pay only on delivery, anywhere in Pakistan.
+            Review your order and send it on WhatsApp — pay only on delivery, anywhere in Pakistan.
           </p>
         </header>
 
