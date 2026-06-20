@@ -36,7 +36,7 @@ export function HomeVoucherSection() {
                 Build a Rs.&nbsp;7,000+ order
               </Link>
               <Link
-                href="/shop?sale=1"
+                href="/shop/sale"
                 className="inline-flex min-h-[48px] items-center justify-center rounded-full border-2 border-[var(--border-accent)] bg-[var(--off-white)]/90 px-8 py-3 text-center font-[var(--font-dm-sans)] text-[14px] font-medium text-[var(--text-primary)] no-underline backdrop-blur-sm transition hover:border-[var(--sage)] hover:bg-[var(--bg-card)]"
               >
                 Shop sale picks first

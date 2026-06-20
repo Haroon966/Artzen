@@ -1,16 +1,15 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { getSiteOrigin, SITE_BRAND } from "@/lib/site";
+import { buildStaticPageMetadata } from "@/lib/seo-metadata";
+import { SITE_BRAND } from "@/lib/site";
 import { ProfileClient } from "./ProfileClient";
 
-const pageUrl = `${getSiteOrigin()}/profile`;
-
-export const metadata: Metadata = {
+export const metadata: Metadata = buildStaticPageMetadata({
   title: "My Profile",
   description: `Your local order history and delivery details at ${SITE_BRAND}.`,
-  alternates: { canonical: pageUrl },
+  path: "/profile",
   robots: { index: false, follow: true },
-};
+});
 
 export default function ProfilePage() {
   return (

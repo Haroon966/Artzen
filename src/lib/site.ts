@@ -24,9 +24,33 @@ export function canonicalUrl(path: string): string {
   return p.endsWith("/") ? `${origin}${p}` : `${origin}${p}/`;
 }
 
-/** Default Open Graph / schema image (committed raster under public/). */
-export function getDefaultShareImagePath(): string {
+/** Homepage hero carousel image (committed raster under public/). */
+export function getHeroImagePath(): string {
   return "/images/hero-1.webp";
+}
+
+/** @deprecated Use getOgShareImagePath() for social previews; hero carousel uses getHeroImagePath(). */
+export function getDefaultShareImagePath(): string {
+  return getHeroImagePath();
+}
+
+/** Branded Open Graph / WhatsApp share banner (1200×630 JPG). */
+export function getOgShareImagePath(): string {
+  return "/images/og-banner.jpg";
+}
+
+export const OG_SHARE_IMAGE_WIDTH = 1200;
+export const OG_SHARE_IMAGE_HEIGHT = 630;
+
+/** Default OG/Twitter image metadata for static pages and layout fallbacks. */
+export function getOgShareImageMetadata(alt?: string) {
+  return {
+    url: absoluteUrl(getOgShareImagePath()),
+    width: OG_SHARE_IMAGE_WIDTH,
+    height: OG_SHARE_IMAGE_HEIGHT,
+    alt: alt ?? `${SITE_BRAND} — online shopping in Pakistan`,
+    type: "image/jpeg" as const,
+  };
 }
 
 /** Google Search Console HTML tag verification (optional). */

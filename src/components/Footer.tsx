@@ -42,8 +42,8 @@ export function Footer({ categoryLinks }: { categoryLinks: NavLinkItem[] }) {
               <Image
                 src="/Artzens-logo-light.png"
                 alt={SITE_BRAND}
-                width={220}
-                height={64}
+                width={518}
+                height={482}
                 className="h-12 w-auto max-w-[min(100%,240px)] object-contain object-left sm:h-14"
               />
             </Link>
@@ -85,7 +85,7 @@ export function Footer({ categoryLinks }: { categoryLinks: NavLinkItem[] }) {
               )}
               <li>
                 <Link
-                  href="/shop?sale=1"
+                  href="/shop/sale"
                   className={`${linkBase} font-semibold text-[var(--red)] hover:text-[var(--sage-light)]`}
                 >
                   Sale
@@ -140,6 +140,11 @@ export function Footer({ categoryLinks }: { categoryLinks: NavLinkItem[] }) {
               <li>
                 <Link href="/terms" className={linkBase}>
                   Terms
+                </Link>
+              </li>
+              <li>
+                <Link href="/llms.txt" className={linkBase}>
+                  AI context
                 </Link>
               </li>
             </ul>

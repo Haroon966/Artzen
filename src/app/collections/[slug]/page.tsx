@@ -4,11 +4,12 @@ import Link from "next/link";
 import {
   absoluteUrl,
   canonicalUrl,
-  getDefaultShareImagePath,
+  getOgShareImageMetadata,
   getSiteOrigin,
   SITE_BRAND,
 } from "@/lib/site";
 import { clipMetaDescription, collectionSeoTitle } from "@/lib/seo";
+import { defaultOpenGraphImages } from "@/lib/seo-metadata";
 import {
   getServerCollection,
   getServerCollections,
@@ -40,7 +41,12 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       : `${collection.description?.trim() || `${collection.name} at ${SITE_BRAND}.`} ${genericCollectionDesc}`;
   const description = clipMetaDescription(descBase);
   const url = canonicalUrl(`/collections/${slug}`);
-  const ogImage = absoluteUrl(getDefaultShareImagePath());
+  const products = await getServerProductsByCollection(slug);
+  const primaryImage = products[0]?.image;
+  const ogImages = primaryImage
+    ? [{ url: absoluteUrl(primaryImage), alt: `${collection.name} — ${SITE_BRAND}` }]
+    : defaultOpenGraphImages(`${collection.name} — ${SITE_BRAND}`);
+  const ogImageUrl = ogImages[0]?.url;
   return {
     title,
     description,
@@ -52,13 +58,13 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       siteName: SITE_BRAND,
       type: "website",
       locale: "en_PK",
-      images: [{ url: ogImage, alt: `${collection.name} — ${SITE_BRAND}` }],
+      images: ogImages,
     },
     twitter: {
       card: "summary_large_image",
       title,
       description,
-      images: [ogImage],
+      ...(ogImageUrl ? { images: [ogImageUrl] } : {}),
     },
   };
 }

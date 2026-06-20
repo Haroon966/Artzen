@@ -1,33 +1,15 @@
 import type { Metadata } from "next";
-import {
-  absoluteUrl,
-  getDefaultShareImagePath,
-  getSiteOrigin,
-  SITE_BRAND,
-} from "@/lib/site";
+import { buildStaticPageMetadata } from "@/lib/seo-metadata";
+import { SITE_BRAND } from "@/lib/site";
 
-const origin = getSiteOrigin();
-const pageUrl = `${origin}/shipping-policy`;
 const description = `Shipping timelines, delivery coverage, and Cash on Delivery details for ${SITE_BRAND}.`;
-const ogImage = absoluteUrl(getDefaultShareImagePath());
 
-export const metadata: Metadata = {
+export const metadata: Metadata = buildStaticPageMetadata({
   title: "Shipping Policy",
   description,
-  alternates: { canonical: pageUrl },
-  openGraph: {
-    title: `Shipping Policy | ${SITE_BRAND}`,
-    description,
-    url: pageUrl,
-    images: [{ url: ogImage, alt: `${SITE_BRAND} shipping policy` }],
-  },
-  twitter: {
-    card: "summary_large_image",
-    title: `Shipping Policy | ${SITE_BRAND}`,
-    description,
-    images: [ogImage],
-  },
-};
+  path: "/shipping-policy",
+  imageAlt: `${SITE_BRAND} shipping policy`,
+});
 
 export default function ShippingPolicyPage() {
   return (

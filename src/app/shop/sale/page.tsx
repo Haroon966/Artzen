@@ -4,12 +4,13 @@ import { Suspense } from "react";
 import { buildShopMetadata } from "@/lib/seo-metadata";
 import { getServerShopPageData } from "@/lib/catalog-server";
 import { ShopSeoHead } from "@/components/ShopSeoHead";
-import { ShopShellClient } from "./ShopShellClient";
+import { ShopShellClient } from "../ShopShellClient";
 import { SITE_BRAND } from "@/lib/site";
 
-export const metadata: Metadata = buildShopMetadata();
+/** Static sale landing page with indexable metadata (canonical `/shop?sale=1`). */
+export const metadata: Metadata = buildShopMetadata({ sale: "1" }, { path: "/shop/sale" });
 
-export default async function ShopPage() {
+export default async function ShopSalePage() {
   const { shopProducts, count, categoryLinks, facetSummary } = await getServerShopPageData();
 
   return (
@@ -19,26 +20,11 @@ export default async function ShopPage() {
         fallback={
           <section className="w-full px-4 py-12 sm:px-6 sm:py-16 lg:px-10 xl:px-14 2xl:px-16">
             <h1 className="font-[var(--font-cormorant)] text-4xl font-semibold text-[var(--dark)]">
-              Shop all products
+              Shop sale items
             </h1>
-            <p className="mt-3 max-w-2xl font-[var(--font-dm-sans)] text-[15px] text-muted">
-              Browse wall art, calligraphy, gifts, and decor. {SITE_BRAND} delivers
-              across Pakistan with Cash on Delivery.
-            </p>
             <p className="mt-3 font-[var(--font-dm-sans)] text-sm text-[var(--dark)]/70">
               {count}+ products available.
             </p>
-            <div className="mt-6 flex flex-wrap gap-2.5">
-              {categoryLinks.slice(0, 10).map((link) => (
-                <Link
-                  key={link.href}
-                  href={link.href}
-                  className="rounded-full border border-black/[0.12] bg-white px-4 py-2 text-[13px] text-[var(--dark)] no-underline"
-                >
-                  {link.label}
-                </Link>
-              ))}
-            </div>
           </section>
         }
       >
@@ -46,6 +32,7 @@ export default async function ShopPage() {
           shopProducts={shopProducts}
           facetSummary={facetSummary}
           categoryLinks={categoryLinks}
+          initialSaleOnly
         />
       </Suspense>
     </div>

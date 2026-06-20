@@ -85,7 +85,7 @@ const llmsShort = `# ${SITE_BRAND}
 ## Key pages
 
 - [Shop](${absUrl("/shop")}) — product catalog and filters.
-- [Shop (on sale)](${absUrl("/shop?sale=1")}) — discounted items.
+- [Shop (on sale)](${absUrl("/shop/sale")}) — discounted items.
 - [Buying guide](${absUrl("/guide")}) — how to choose and order.
 - [Cash on Delivery](${absUrl("/cod")}) — how COD works.
 - [About](${absUrl("/about")})

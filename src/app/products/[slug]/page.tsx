@@ -12,7 +12,7 @@ import {
 import {
   absoluteUrl,
   canonicalUrl,
-  getDefaultShareImagePath,
+  getOgShareImageMetadata,
   getSiteOrigin,
   SITE_BRAND,
 } from "@/lib/site";
@@ -42,7 +42,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const description = clipMetaDescription(rawDesc);
   const ogImage = absoluteUrl(product.image);
   const url = canonicalUrl(`/products/${slug}`);
-  const ogFallback = absoluteUrl(getDefaultShareImagePath());
+  const ogFallback = getOgShareImageMetadata(`${SITE_BRAND} — online shopping in Pakistan`);
   return {
     title: seoTitle,
     description,
@@ -56,7 +56,13 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       locale: "en_PK",
       images: [
         { url: ogImage, alt: seoTitle },
-        { url: ogFallback, alt: `${SITE_BRAND} — online shopping in Pakistan` },
+        {
+          url: ogFallback.url,
+          width: ogFallback.width,
+          height: ogFallback.height,
+          alt: ogFallback.alt,
+          type: ogFallback.type,
+        },
       ],
     },
     twitter: {

@@ -76,6 +76,8 @@ To switch provider, edit `src/app/checkout/CheckoutForm.tsx`.
 - Global metadata and JSON-LD schema are defined in `src/app/layout.tsx`
 - Product and collection routes use static params/metadata for prerendered SEO pages
 - Because the site is a static export, SEO surfaces update on rebuild/redeploy (not at request time)
+- Run validation: `npm run validate:deploy` before deploy (product schema + llms.txt in `out/`)
+- Regenerate share images if branding changes: `npm run images:seo`
 
 ### SEO domain checklist (before deploy)
 

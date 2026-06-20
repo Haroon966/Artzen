@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { absoluteUrl, getDefaultShareImagePath, getSiteOrigin } from "@/lib/site";
+import { canonicalUrl, getOgShareImageMetadata, SITE_BRAND } from "@/lib/site";
 import { faqPageJsonLd, homeFaqItems } from "@/lib/faq-content";
 import { HomeCategorySectionClient } from "@/components/HomeCategorySectionClient";
 import { HomeHeroFanClient } from "@/components/HomeHeroFanClient";
@@ -17,26 +17,37 @@ import { getCachedCatalog } from "@/lib/catalog-server";
 const homeDescription =
   "Pakistan's favourite online store. Shop home decor, gifts, wall art and more. Cash on Delivery nationwide.";
 
-const origin = getSiteOrigin();
-const defaultOg = absoluteUrl(getDefaultShareImagePath());
+const homeTitle = `Shop Everything Online | ${SITE_BRAND} — Pakistan's Favourite Store`;
+const homeOg = getOgShareImageMetadata();
 
 export const metadata: Metadata = {
   title: {
-    absolute: "Shop Everything Online | Artzen — Pakistan's Favourite Store",
+    absolute: homeTitle,
   },
   description: homeDescription,
-  alternates: { canonical: origin },
+  alternates: { canonical: canonicalUrl("/") },
   openGraph: {
-    title: "Shop Everything Online | Artzen — Pakistan's Favourite Store",
+    title: homeTitle,
     description: homeDescription,
-    url: origin,
-    images: [{ url: defaultOg, alt: "Artzen — online shopping in Pakistan" }],
+    url: canonicalUrl("/"),
+    siteName: SITE_BRAND,
+    type: "website",
+    locale: "en_PK",
+    images: [
+      {
+        url: homeOg.url,
+        width: homeOg.width,
+        height: homeOg.height,
+        alt: homeOg.alt,
+        type: homeOg.type,
+      },
+    ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "Shop Everything Online | Artzen — Pakistan's Favourite Store",
+    title: homeTitle,
     description: homeDescription,
-    images: [defaultOg],
+    images: [homeOg.url],
   },
 };
 
@@ -110,7 +121,7 @@ export default async function Home() {
               Shop Islamic wall art and gifts
             </Link>
             <Link
-              href="/shop?sale=1"
+              href="/shop/sale"
               className="inline-flex min-h-[50px] w-full items-center justify-center rounded-full border-2 border-white/35 bg-transparent px-6 font-[var(--font-dm-sans)] text-[15px] font-semibold text-white no-underline transition-colors active:bg-white/10"
             >
               View discounted decor deals

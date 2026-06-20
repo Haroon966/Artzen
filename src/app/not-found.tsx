@@ -1,8 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { getSiteOrigin, SITE_BRAND } from "@/lib/site";
-
-const origin = getSiteOrigin();
+import { SITE_BRAND } from "@/lib/site";
 
 export const metadata: Metadata = {
   title: "Page Not Found",
@@ -12,7 +10,6 @@ export const metadata: Metadata = {
     follow: false,
     googleBot: { index: false, follow: false },
   },
-  alternates: { canonical: `${origin}/404` },
 };
 
 export default function NotFound() {

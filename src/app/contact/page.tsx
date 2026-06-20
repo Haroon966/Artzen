@@ -1,33 +1,15 @@
 import type { Metadata } from "next";
-import {
-  absoluteUrl,
-  getDefaultShareImagePath,
-  getSiteOrigin,
-  SITE_BRAND,
-} from "@/lib/site";
+import { buildStaticPageMetadata } from "@/lib/seo-metadata";
+import { SITE_BRAND } from "@/lib/site";
 
-const origin = getSiteOrigin();
 const description = `Get in touch with ${SITE_BRAND} for orders, support, and custom requests. Reach us on WhatsApp from anywhere in Pakistan.`;
-const pageUrl = `${origin}/contact`;
-const ogImage = absoluteUrl(getDefaultShareImagePath());
 
-export const metadata: Metadata = {
+export const metadata: Metadata = buildStaticPageMetadata({
   title: "Contact",
   description,
-  alternates: { canonical: pageUrl },
-  openGraph: {
-    title: `Contact | ${SITE_BRAND}`,
-    description,
-    url: pageUrl,
-    images: [{ url: ogImage, alt: `Contact ${SITE_BRAND}` }],
-  },
-  twitter: {
-    card: "summary_large_image",
-    title: `Contact | ${SITE_BRAND}`,
-    description,
-    images: [ogImage],
-  },
-};
+  path: "/contact",
+  imageAlt: `Contact ${SITE_BRAND}`,
+});
 
 export default function ContactPage() {
   return (

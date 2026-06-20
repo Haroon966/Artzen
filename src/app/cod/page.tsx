@@ -1,35 +1,17 @@
 import type { Metadata } from "next";
-import {
-  absoluteUrl,
-  getDefaultShareImagePath,
-  getSiteOrigin,
-  SITE_BRAND,
-} from "@/lib/site";
+import { buildStaticPageMetadata } from "@/lib/seo-metadata";
+import { SITE_BRAND } from "@/lib/site";
 import { FaqSection } from "@/components/FaqSection";
 import { codFaqItems, faqPageJsonLd } from "@/lib/faq-content";
 
-const origin = getSiteOrigin();
 const description = `Pay when you receive. ${SITE_BRAND} offers Cash on Delivery across Pakistan. No advance payment required.`;
-const pageUrl = `${origin}/cod`;
-const ogImage = absoluteUrl(getDefaultShareImagePath());
 
-export const metadata: Metadata = {
+export const metadata: Metadata = buildStaticPageMetadata({
   title: "Cash on Delivery",
   description,
-  alternates: { canonical: pageUrl },
-  openGraph: {
-    title: `Cash on Delivery | ${SITE_BRAND}`,
-    description,
-    url: pageUrl,
-    images: [{ url: ogImage, alt: `Cash on Delivery across Pakistan at ${SITE_BRAND}` }],
-  },
-  twitter: {
-    card: "summary_large_image",
-    title: `Cash on Delivery | ${SITE_BRAND}`,
-    description,
-    images: [ogImage],
-  },
-};
+  path: "/cod",
+  imageAlt: `Cash on Delivery across Pakistan at ${SITE_BRAND}`,
+});
 
 export default function CODPage() {
   const faqLd = faqPageJsonLd(codFaqItems);

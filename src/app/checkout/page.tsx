@@ -1,14 +1,14 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { getSiteOrigin } from "@/lib/site";
+import { buildStaticPageMetadata } from "@/lib/seo-metadata";
 import { CheckoutForm } from "./CheckoutForm";
 
-export const metadata: Metadata = {
+export const metadata: Metadata = buildStaticPageMetadata({
   title: "Checkout",
   description: "Place your order. Cash on Delivery across Pakistan.",
-  alternates: { canonical: `${getSiteOrigin()}/checkout` },
+  path: "/checkout",
   robots: { index: false, follow: true },
-};
+});
 
 export default function CheckoutPage() {
   return (

@@ -388,8 +388,8 @@ function HeaderInner({ categoryLinks }: { categoryLinks: NavLinkItem[] }) {
                 <Image
                   src="/Artzens-logo.png"
                   alt={SITE_BRAND}
-                  width={188}
-                  height={56}
+                  width={518}
+                  height={482}
                   className="h-11 w-auto sm:h-12"
                   priority
                 />
@@ -536,7 +536,7 @@ function HeaderInner({ categoryLinks }: { categoryLinks: NavLinkItem[] }) {
               </li>
               <li>
                 <Link
-                  href="/shop?sale=1"
+                  href="/shop/sale"
                   className={saleActive ? saleLinkActive : saleLinkIdle}
                   aria-current={saleActive ? "page" : undefined}
                 >
@@ -570,8 +570,8 @@ function HeaderInner({ categoryLinks }: { categoryLinks: NavLinkItem[] }) {
               <Image
                 src="/Artzens-logo.png"
                 alt={SITE_BRAND}
-                width={212}
-                height={64}
+                width={518}
+                height={482}
                 className="h-14 w-auto"
                 priority
               />
@@ -677,8 +677,8 @@ function HeaderInner({ categoryLinks }: { categoryLinks: NavLinkItem[] }) {
                 <Image
                   src="/Artzens-logo.png"
                   alt={SITE_BRAND}
-                  width={200}
-                  height={56}
+                  width={518}
+                  height={482}
                   className="h-11 w-auto max-w-[min(100%,220px)] object-contain object-left"
                 />
               </Link>
@@ -716,7 +716,7 @@ function HeaderInner({ categoryLinks }: { categoryLinks: NavLinkItem[] }) {
                 </div>
               </div>
               <Link
-                href="/shop?sale=1"
+                href="/shop/sale"
                 className={`rounded-lg px-3 py-3 font-[var(--font-dm-sans)] text-[15px] font-semibold text-[#ff8a8a] no-underline transition-all duration-[250ms] ease hover:bg-[rgba(237,230,222,0.1)] ${focusRing}`}
                 onClick={() => setMobileOpen(false)}
               >

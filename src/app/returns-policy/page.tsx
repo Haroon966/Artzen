@@ -1,33 +1,15 @@
 import type { Metadata } from "next";
-import {
-  absoluteUrl,
-  getDefaultShareImagePath,
-  getSiteOrigin,
-  SITE_BRAND,
-} from "@/lib/site";
+import { buildStaticPageMetadata } from "@/lib/seo-metadata";
+import { SITE_BRAND } from "@/lib/site";
 
-const origin = getSiteOrigin();
-const pageUrl = `${origin}/returns-policy`;
 const description = `Returns and issue-resolution policy for ${SITE_BRAND} orders in Pakistan.`;
-const ogImage = absoluteUrl(getDefaultShareImagePath());
 
-export const metadata: Metadata = {
+export const metadata: Metadata = buildStaticPageMetadata({
   title: "Returns Policy",
   description,
-  alternates: { canonical: pageUrl },
-  openGraph: {
-    title: `Returns Policy | ${SITE_BRAND}`,
-    description,
-    url: pageUrl,
-    images: [{ url: ogImage, alt: `${SITE_BRAND} returns policy` }],
-  },
-  twitter: {
-    card: "summary_large_image",
-    title: `Returns Policy | ${SITE_BRAND}`,
-    description,
-    images: [ogImage],
-  },
-};
+  path: "/returns-policy",
+  imageAlt: `${SITE_BRAND} returns policy`,
+});
 
 export default function ReturnsPolicyPage() {
   return (

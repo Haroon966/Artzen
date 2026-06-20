@@ -1,33 +1,15 @@
 import type { Metadata } from "next";
-import {
-  absoluteUrl,
-  getDefaultShareImagePath,
-  getSiteOrigin,
-  SITE_BRAND,
-} from "@/lib/site";
+import { buildStaticPageMetadata } from "@/lib/seo-metadata";
+import { SITE_BRAND } from "@/lib/site";
 
-const origin = getSiteOrigin();
-const pageUrl = `${origin}/privacy-policy`;
 const description = `How ${SITE_BRAND} handles customer data for orders and support.`;
-const ogImage = absoluteUrl(getDefaultShareImagePath());
 
-export const metadata: Metadata = {
+export const metadata: Metadata = buildStaticPageMetadata({
   title: "Privacy Policy",
   description,
-  alternates: { canonical: pageUrl },
-  openGraph: {
-    title: `Privacy Policy | ${SITE_BRAND}`,
-    description,
-    url: pageUrl,
-    images: [{ url: ogImage, alt: `${SITE_BRAND} privacy policy` }],
-  },
-  twitter: {
-    card: "summary_large_image",
-    title: `Privacy Policy | ${SITE_BRAND}`,
-    description,
-    images: [ogImage],
-  },
-};
+  path: "/privacy-policy",
+  imageAlt: `${SITE_BRAND} privacy policy`,
+});
 
 export default function PrivacyPolicyPage() {
   return (

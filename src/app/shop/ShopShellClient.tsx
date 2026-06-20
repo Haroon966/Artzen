@@ -12,18 +12,23 @@ export function ShopShellClient({
   shopProducts,
   facetSummary,
   categoryLinks,
+  initialSaleOnly = false,
 }: {
   shopProducts: ShopListProduct[];
   facetSummary: ShopFacetSummary;
   categoryLinks: LinkItem[];
+  initialSaleOnly?: boolean;
 }) {
-  const [urlSale, setUrlSale] = useState(false);
+  const [urlSale, setUrlSale] = useState(initialSaleOnly);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    const isSale = params.get("sale") === "1" || params.get("sale") === "true";
+    const isSale =
+      initialSaleOnly ||
+      params.get("sale") === "1" ||
+      params.get("sale") === "true";
     setUrlSale(isSale);
-  }, []);
+  }, [initialSaleOnly]);
 
   return (
     <>

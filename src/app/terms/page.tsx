@@ -1,33 +1,15 @@
 import type { Metadata } from "next";
-import {
-  absoluteUrl,
-  getDefaultShareImagePath,
-  getSiteOrigin,
-  SITE_BRAND,
-} from "@/lib/site";
+import { buildStaticPageMetadata } from "@/lib/seo-metadata";
+import { SITE_BRAND } from "@/lib/site";
 
-const origin = getSiteOrigin();
-const pageUrl = `${origin}/terms`;
 const description = `Terms and conditions for shopping on ${SITE_BRAND}.`;
-const ogImage = absoluteUrl(getDefaultShareImagePath());
 
-export const metadata: Metadata = {
+export const metadata: Metadata = buildStaticPageMetadata({
   title: "Terms & Conditions",
   description,
-  alternates: { canonical: pageUrl },
-  openGraph: {
-    title: `Terms & Conditions | ${SITE_BRAND}`,
-    description,
-    url: pageUrl,
-    images: [{ url: ogImage, alt: `${SITE_BRAND} terms and conditions` }],
-  },
-  twitter: {
-    card: "summary_large_image",
-    title: `Terms & Conditions | ${SITE_BRAND}`,
-    description,
-    images: [ogImage],
-  },
-};
+  path: "/terms",
+  imageAlt: `${SITE_BRAND} terms and conditions`,
+});
 
 export default function TermsPage() {
   return (

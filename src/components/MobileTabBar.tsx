@@ -77,8 +77,8 @@ export function MobileTabBar() {
           <Image
             src="/Artzens-logo.png"
             alt=""
-            width={72}
-            height={22}
+            width={518}
+            height={482}
             className="h-[22px] w-auto max-w-[72px] object-contain object-center"
           />
         </span>

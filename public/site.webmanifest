@@ -1,0 +1,28 @@
+{
+  "name": "Artzens",
+  "short_name": "Artzens",
+  "description": "Pakistan's favourite online store for home decor, wall art, and gifts. Cash on Delivery nationwide.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#F5F5F0",
+  "theme_color": "#7DAA8A",
+  "lang": "en-PK",
+  "icons": [
+    {
+      "src": "/Artzen-favicon.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/png"
+    },
+    {
+      "src": "/Artzens-logo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}

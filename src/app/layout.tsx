@@ -2,9 +2,10 @@ import type { Metadata, Viewport } from "next";
 import { Cormorant_Garamond, DM_Sans } from "next/font/google";
 import {
   absoluteUrl,
+  canonicalUrl,
   getContactPhoneE164,
-  getDefaultShareImagePath,
   getGoogleSiteVerification,
+  getOgShareImageMetadata,
   getSameAsUrls,
   getSiteOrigin,
   SITE_BRAND,
@@ -35,7 +36,7 @@ const dmSans = DM_Sans({
 });
 
 const siteOrigin = getSiteOrigin();
-const defaultShareImageUrl = absoluteUrl(getDefaultShareImagePath());
+const defaultOgImage = getOgShareImageMetadata();
 const siteLogoPath = "/Artzens-logo.png";
 const faviconPath = "/Artzen-favicon.png";
 const googleVerification = getGoogleSiteVerification();
@@ -56,8 +57,9 @@ export const metadata: Metadata = {
   icons: {
     icon: [{ url: faviconPath, type: "image/png" }],
     shortcut: [faviconPath],
-    apple: [{ url: faviconPath, type: "image/png" }],
+    apple: [{ url: "/apple-touch-icon.png", type: "image/png", sizes: "180x180" }],
   },
+  manifest: "/site.webmanifest",
   title: {
     default: `Shop Everything Online | ${SITE_BRAND} — Pakistan's Favourite Store`,
     template: `%s | ${SITE_BRAND}`,
@@ -87,14 +89,21 @@ export const metadata: Metadata = {
     locale: "en_PK",
     description: siteDescription,
     type: "website",
+    url: canonicalUrl("/"),
     images: [
-      { url: defaultShareImageUrl, alt: `${SITE_BRAND} — online shopping in Pakistan` },
+      {
+        url: defaultOgImage.url,
+        width: defaultOgImage.width,
+        height: defaultOgImage.height,
+        alt: defaultOgImage.alt,
+        type: defaultOgImage.type,
+      },
     ],
   },
   twitter: {
     card: "summary_large_image",
     description: siteDescription,
-    images: [defaultShareImageUrl],
+    images: [defaultOgImage.url],
   },
   other: {
     publisher: SITE_BRAND,

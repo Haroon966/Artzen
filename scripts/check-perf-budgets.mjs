@@ -36,6 +36,7 @@ function main() {
     const report = JSON.parse(fs.readFileSync(jsonPath, "utf8"));
     const audits = report.audits ?? {};
     const score = report.categories?.performance?.score;
+    const seoScore = report.categories?.seo?.score;
     const lcp = numAudit(audits, "largest-contentful-paint");
     const tbt = numAudit(audits, "total-blocking-time");
     const cls = numAudit(audits, "cumulative-layout-shift");
@@ -46,6 +47,13 @@ function main() {
       if (typeof score !== "number" || score < cfg.minPerformanceScore) {
         issues.push(
           `performance score ${score == null ? "—" : score.toFixed(2)} < min ${cfg.minPerformanceScore}`
+        );
+      }
+    }
+    if (typeof cfg.minSeoScore === "number") {
+      if (typeof seoScore !== "number" || seoScore < cfg.minSeoScore) {
+        issues.push(
+          `SEO score ${seoScore == null ? "—" : seoScore.toFixed(2)} < min ${cfg.minSeoScore}`
         );
       }
     }
@@ -64,7 +72,7 @@ function main() {
       console.error(`[perf budget] ${label}: ${issues.join("; ")}`);
     } else {
       console.log(
-        `[perf budget] OK ${label} score=${score == null ? "—" : Math.round(score * 100)} LCP=${lcp == null ? "—" : Math.round(lcp)}ms TBT=${tbt == null ? "—" : Math.round(tbt)}ms CLS=${cls == null ? "—" : cls.toFixed(3)}`
+        `[perf budget] OK ${label} perf=${score == null ? "—" : Math.round(score * 100)} seo=${seoScore == null ? "—" : Math.round(seoScore * 100)} LCP=${lcp == null ? "—" : Math.round(lcp)}ms TBT=${tbt == null ? "—" : Math.round(tbt)}ms CLS=${cls == null ? "—" : cls.toFixed(3)}`
       );
     }
   }

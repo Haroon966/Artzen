@@ -62,26 +62,57 @@ function runCapture(cmd, args) {
   });
 }
 
+function failedSeoAudits(report) {
+  const refs = report.categories?.seo?.auditRefs ?? [];
+  const audits = report.audits ?? {};
+  return refs
+    .filter((ref) => ref.weight > 0 && audits[ref.id]?.score !== 1)
+    .map((ref) => ({
+      id: ref.id,
+      title: audits[ref.id]?.title ?? ref.id,
+      score: audits[ref.id]?.score,
+    }));
+}
+
 function summarize() {
   const rows = PAGES.map(({ out, path }) => {
     const file = nodePath.join(PERF, out);
     const h = JSON.parse(fs.readFileSync(file, "utf8"));
     const a = h.audits;
-    const score = h.categories.performance.score;
-    return { out, path, score, a };
+    const perfScore = h.categories?.performance?.score;
+    const seoScore = h.categories?.seo?.score;
+    return { out, path, perfScore, seoScore, a, report: h };
   });
 
-  let md = `# Mobile performance baseline (Lighthouse)\n\n`;
-  md += `Environment: static export served locally (\`npx serve out\`), Lighthouse 11.x, mobile emulation, performance category only.\n\n`;
+  let md = `# Mobile Lighthouse baseline\n\n`;
+  md += `Environment: static export served locally (\`npx serve out\`), Lighthouse 11.x, mobile emulation, performance + SEO categories.\n\n`;
   md += `Regenerate: \`npm run perf:lighthouse\` from the repo root.\n\n`;
-  md += `| Page | Perf score | LCP | TBT | CLS | Speed Index |\n|------|------------|-----|-----|-----|-------------|\n`;
-  for (const { path: p, score, a } of rows) {
+  md += `| Page | Perf | SEO | LCP | TBT | CLS | Speed Index |\n|------|------|-----|-----|-----|-----|-------------|\n`;
+  for (const { path: p, perfScore, seoScore, a } of rows) {
     const label = p === "/" ? "Home (/)" : p;
     const lcp = a["largest-contentful-paint"]?.displayValue ?? "—";
     const tbt = a["total-blocking-time"]?.displayValue ?? "—";
     const cls = a["cumulative-layout-shift"]?.displayValue ?? "—";
     const si = a["speed-index"]?.displayValue ?? "—";
-    md += `| ${label} | ${score != null ? Math.round(score * 100) : "—"} | ${lcp} | ${tbt} | ${cls} | ${si} |\n`;
+    md += `| ${label} | ${perfScore != null ? Math.round(perfScore * 100) : "—"} | ${seoScore != null ? Math.round(seoScore * 100) : "—"} | ${lcp} | ${tbt} | ${cls} | ${si} |\n`;
+  }
+
+  md += `\n## SEO failures (score < 100)\n\n`;
+  for (const { path: p, seoScore, report } of rows) {
+    const label = p === "/" ? "Home (/)" : p;
+    if (seoScore === 1) {
+      md += `### ${label}\n- All SEO audits passed.\n\n`;
+      continue;
+    }
+    const fails = failedSeoAudits(report);
+    md += `### ${label}\n`;
+    if (!fails.length) md += `- (score ${Math.round((seoScore ?? 0) * 100)} — no weighted failures listed)\n\n`;
+    else {
+      for (const f of fails) {
+        md += `- **${f.id}** (${f.title}) — score ${f.score ?? "—"}\n`;
+      }
+      md += `\n`;
+    }
   }
 
   md += `\n## LCP element (largest paint)\n\n`;
@@ -136,7 +167,7 @@ async function main() {
         "--yes",
         "lighthouse@11.6.0",
         `${ORIGIN}${p}`,
-        "--only-categories=performance",
+        "--only-categories=performance,seo",
         "--form-factor=mobile",
         "--screenEmulation.mobile=true",
         "--quiet",

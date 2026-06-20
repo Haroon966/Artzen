@@ -1,14 +1,15 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { getSiteOrigin, SITE_BRAND } from "@/lib/site";
+import { buildStaticPageMetadata } from "@/lib/seo-metadata";
+import { SITE_BRAND } from "@/lib/site";
 import { CartContent } from "./CartContent";
 
-export const metadata: Metadata = {
+export const metadata: Metadata = buildStaticPageMetadata({
   title: "Cart",
   description: `Your cart at ${SITE_BRAND}. Review items and order on WhatsApp with Cash on Delivery.`,
-  alternates: { canonical: `${getSiteOrigin()}/cart` },
+  path: "/cart",
   robots: { index: false, follow: true },
-};
+});
 
 export default function CartPage() {
   return (
