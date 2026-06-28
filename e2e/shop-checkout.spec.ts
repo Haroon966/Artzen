@@ -8,58 +8,81 @@ async function firstProductCardLink(page: import("@playwright/test").Page) {
   return grid.locator("a[href*='/products/']").first();
 }
 
-test.describe("Shop to checkout", () => {
-  test("shop → product → add to cart → checkout form", async ({ page }) => {
-    await page.goto("/shop/", { waitUntil: "load" });
+async function addFirstProductToCart(page: import("@playwright/test").Page) {
+  await page.goto("/shop/", { waitUntil: "load" });
+  const productLink = await firstProductCardLink(page);
+  await productLink.click();
+  await expect(page).toHaveURL(/\/products\//, { timeout: 15_000 });
+  await page
+    .locator("main")
+    .getByRole("button", { name: /add to cart/i })
+    .first()
+    .click();
+}
 
-    const productLink = await firstProductCardLink(page);
-    await expect(productLink).toBeVisible();
-    await productLink.click();
+function stubWindowOpen(page: import("@playwright/test").Page) {
+  return page.addInitScript(() => {
+    window.open = (url) => {
+      (window as unknown as { __lastWaUrl?: string }).__lastWaUrl = String(url);
+      return null;
+    };
+  });
+}
 
-    await expect(page).toHaveURL(/\/products\//, { timeout: 15_000 });
+async function fillDeliveryDetails(
+  page: import("@playwright/test").Page,
+  options: {
+    name: string;
+    phone: string;
+    city: string;
+    address: string;
+  }
+) {
+  await page.getByLabel(/full name/i).fill(options.name);
+  await page.getByLabel(/^phone/i).fill(options.phone);
+  await page.getByLabel(/city/i).fill(options.city);
+  await page.getByLabel(/full address/i).fill(options.address);
+}
 
-    await page
-      .locator("main")
-      .getByRole("button", { name: /add to cart/i })
-      .first()
-      .click();
+test.describe("Shop to cart order", () => {
+  test("shop → product → add to cart → cart shows delivery form", async ({ page }) => {
+    await addFirstProductToCart(page);
+    await page.goto("/cart/", { waitUntil: "load" });
 
-    await page.goto("/checkout/", { waitUntil: "load" });
-
-    await expect(
-      page.getByRole("heading", { name: /delivery details/i })
-    ).toBeVisible();
-    await expect(page.getByRole("heading", { name: /order summary/i })).toBeVisible();
-    await expect(page.getByText(/^Total:/)).toBeVisible();
+    await expect(page.getByText(/delivery details/i)).toBeVisible();
+    await expect(page.getByText(/order summary/i)).toBeVisible();
+    await expect(page.getByText(/estimated total/i)).toBeVisible();
     await expect(page.getByLabel(/full name/i)).toBeVisible();
   });
 
-  test("shop → add to cart → cart WhatsApp link includes order total", async ({ page }) => {
-    await page.goto("/shop/", { waitUntil: "load" });
-
-    const productLink = await firstProductCardLink(page);
-    await productLink.click();
-    await expect(page).toHaveURL(/\/products\//, { timeout: 15_000 });
-
-    await page
-      .locator("main")
-      .getByRole("button", { name: /add to cart/i })
-      .first()
-      .click();
-
+  test("shop → add to cart → cart WhatsApp includes customer details", async ({ page }) => {
+    await stubWindowOpen(page);
+    await addFirstProductToCart(page);
     await page.goto("/cart/", { waitUntil: "load" });
 
-    const whatsAppLink = page
+    const whatsAppButton = page
       .locator("main")
-      .getByRole("link", { name: "Order on WhatsApp", exact: true });
-    await expect(whatsAppLink).toBeVisible();
-    await expect(whatsAppLink).toHaveAttribute("href", /wa\.me/);
+      .getByRole("button", { name: "Order on WhatsApp", exact: true });
+    await expect(whatsAppButton).toBeVisible();
 
-    const href = await whatsAppLink.getAttribute("href");
+    await fillDeliveryDetails(page, {
+      name: "Cart Test User",
+      phone: "03001234567",
+      city: "Lahore",
+      address: "House 1, Street 2, Area 3, Lahore",
+    });
+    await whatsAppButton.click();
+
+    const href = await page.evaluate(
+      () => (window as unknown as { __lastWaUrl?: string }).__lastWaUrl
+    );
+    expect(href).toMatch(/wa\.me/);
     expect(href).toMatch(/Total%3A/);
+    expect(href).toMatch(/Cart%20Test%20User/);
+    expect(href).toMatch(/03001234567/);
   });
 
-  test("checkout with empty cart shows message", async ({ page }) => {
+  test("cart with empty cart shows message", async ({ page }) => {
     await page.goto("/");
     await page.evaluate(() => {
       try {
@@ -68,33 +91,24 @@ test.describe("Shop to checkout", () => {
         /* ignore */
       }
     });
-    await page.goto("/checkout/", { waitUntil: "load" });
-    await expect(page.getByRole("link", { name: /continue shopping/i })).toBeVisible({
+    await page.goto("/cart/", { waitUntil: "load" });
+    await expect(page.getByRole("link", { name: /discover the shop/i })).toBeVisible({
       timeout: 15_000,
     });
-    await expect(page.getByText(/cart is empty/i)).toBeVisible();
+    await expect(page.getByText(/nothing here yet/i)).toBeVisible();
   });
 
-  test("checkout validates phone", async ({ page }) => {
-    await page.goto("/shop/", { waitUntil: "load" });
+  test("cart validates phone before WhatsApp", async ({ page }) => {
+    await addFirstProductToCart(page);
+    await page.goto("/cart/", { waitUntil: "load" });
 
-    const productLink = await firstProductCardLink(page);
-    await productLink.click();
-    await expect(page).toHaveURL(/\/products\//, { timeout: 15_000 });
-
-    await page
-      .locator("main")
-      .getByRole("button", { name: /add to cart/i })
-      .first()
-      .click();
-
-    await page.goto("/checkout/", { waitUntil: "load" });
-
-    await page.getByLabel(/full name/i).fill("Playwright Test User");
-    await page.getByLabel(/^phone/i).fill("123");
-    await page.getByLabel(/city/i).fill("Lahore");
-    await page.getByLabel(/full address/i).fill("House 1, Street 2, Area 3, Lahore");
-    await page.getByRole("button", { name: /confirm order on whatsapp/i }).click();
+    await fillDeliveryDetails(page, {
+      name: "Playwright Test User",
+      phone: "123",
+      city: "Lahore",
+      address: "House 1, Street 2, Area 3, Lahore",
+    });
+    await page.getByRole("button", { name: "Order on WhatsApp", exact: true }).click();
 
     await expect(page.locator("#phone-error")).toContainText(/valid mobile number/i);
   });
@@ -113,52 +127,26 @@ test.describe("Shop to checkout", () => {
   });
 });
 
-test.describe("Checkout success (Formspree stubbed)", () => {
-  test("full submit shows order received", async ({ page }) => {
-    await page.addInitScript(() => {
-      window.open = () => null;
+test.describe("Cart WhatsApp order", () => {
+  test("full submit opens WhatsApp with order details", async ({ page }) => {
+    await stubWindowOpen(page);
+    await addFirstProductToCart(page);
+    await page.goto("/cart/", { waitUntil: "load" });
+
+    await fillDeliveryDetails(page, {
+      name: "E2E Success User",
+      phone: "03001234567",
+      city: "Karachi",
+      address: "House 10, Street 5, Block 3, Karachi — full address line.",
     });
 
-    await page.route("**/*formspree.io/**", async (route) => {
-      if (route.request().method() !== "POST") {
-        await route.continue();
-        return;
-      }
-      await route.fulfill({
-        status: 200,
-        contentType: "application/json",
-        body: JSON.stringify({ next: "https://formspree.io/thanks" }),
-      });
-    });
+    await page.getByRole("button", { name: "Order on WhatsApp", exact: true }).click();
 
-    await page.goto("/shop/", { waitUntil: "load" });
-    const productLink = await firstProductCardLink(page);
-    await productLink.click();
-    await expect(page).toHaveURL(/\/products\//, { timeout: 15_000 });
-
-    await page
-      .locator("main")
-      .getByRole("button", { name: /add to cart/i })
-      .first()
-      .click();
-
-    await page.goto("/checkout/", { waitUntil: "load" });
-
-    await page.getByLabel(/full name/i).fill("E2E Success User");
-    await page.getByLabel(/^phone/i).fill("03001234567");
-    await page.getByLabel(/city/i).fill("Karachi");
-    await page
-      .getByLabel(/full address/i)
-      .fill("House 10, Street 5, Block 3, Karachi — full address line.");
-
-    await page.getByRole("button", { name: /confirm order on whatsapp/i }).click();
-
-    await expect(page.getByRole("heading", { name: /order received/i })).toBeVisible({
-      timeout: 20_000,
-    });
-    await expect(page.locator("p.font-mono").getByText(/^AZ-\d{4}\d{2}\d{2}-[A-Z0-9]+$/)).toBeVisible();
-    await expect(
-      page.getByRole("status").getByRole("link", { name: /cash on delivery/i })
-    ).toBeVisible();
+    const href = await page.evaluate(
+      () => (window as unknown as { __lastWaUrl?: string }).__lastWaUrl
+    );
+    expect(href).toMatch(/wa\.me/);
+    expect(href).toMatch(/E2E%20Success%20User/);
+    expect(href).toMatch(/AZ-\d{4}\d{2}\d{2}-[A-Z0-9]+/);
   });
 });

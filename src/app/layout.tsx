@@ -11,7 +11,6 @@ import {
   SITE_BRAND,
 } from "@/lib/site";
 import "./globals.css";
-import { AnnouncementBar } from "@/components/AnnouncementBar";
 import { SiteHeader } from "@/components/SiteHeader";
 import { SiteFooter } from "@/components/SiteFooter";
 import { ClientCartWrapper } from "@/components/ClientCartWrapper";
@@ -179,7 +178,6 @@ export default function RootLayout({
         <GoogleAnalytics />
         <CatalogLiveProvider>
           <ClientCartWrapper>
-            <AnnouncementBar />
             <SiteHeader />
             <main className="site-main">{children}</main>
             <SiteFooter />

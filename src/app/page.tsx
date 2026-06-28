@@ -5,7 +5,6 @@ import { faqPageJsonLd, homeFaqItems } from "@/lib/faq-content";
 import { HomeCategorySectionClient } from "@/components/HomeCategorySectionClient";
 import { HomeHeroFanClient } from "@/components/HomeHeroFanClient";
 import { HomeTrustStrip } from "@/components/HomeTrustStrip";
-import { HomeVoucherSection } from "@/components/HomeVoucherSection";
 import { WhyArtzen } from "@/components/WhyArtzen";
 import { HomeHeroMobileSlides } from "@/components/HomeHeroMobileSlides";
 import { AnimatedSection } from "@/components/AnimatedSection";
@@ -133,7 +132,6 @@ export default async function Home() {
       </section>
 
       <HomeTrustStrip />
-      <HomeVoucherSection />
 
       <HomeCategorySectionClient
         homepageCategories={homepageCategories}

@@ -55,7 +55,8 @@ export default function CartPage() {
             Your cart
           </h1>
           <p className="mt-3 max-w-md font-[var(--font-dm-sans)] text-[15px] font-light leading-relaxed text-[var(--muted)]">
-            Review your order and send it on WhatsApp — pay only on delivery, anywhere in Pakistan.
+            Enter your delivery details, then send your order on WhatsApp — pay only on delivery,
+            anywhere in Pakistan.
           </p>
         </header>
 

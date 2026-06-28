@@ -33,7 +33,7 @@ export const codFaqItems: { question: string; answer: string }[] = [
   {
     question: `How does Cash on Delivery work at ${SITE_BRAND}?`,
     answer:
-      "Add items to your cart and proceed to checkout. Enter your name, phone number, and delivery address. We confirm and ship your order, and you pay the delivery person in cash when you receive it.",
+      "Add items to your cart, enter your name, phone number, and delivery address, then send your order on WhatsApp. We confirm and ship your order, and you pay the delivery person in cash when you receive it.",
   },
   {
     question: "Which areas do you deliver to?",

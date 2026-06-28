@@ -5,6 +5,16 @@
   command = "npm run build"
   publish = "out"
 
+[[redirects]]
+  from = "/checkout"
+  to = "/cart/"
+  status = 301
+
+[[redirects]]
+  from = "/checkout/*"
+  to = "/cart/"
+  status = 301
+
 # First match wins: long-cache immutable assets, then HTML + misc short cache.
 [[headers]]
   for = "/_next/static/*"

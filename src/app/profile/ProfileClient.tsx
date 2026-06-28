@@ -96,7 +96,7 @@ export function ProfileClient() {
             No orders saved here yet
           </p>
           <p className="mx-auto mt-2 max-w-sm font-[var(--font-dm-sans)] text-[14px] leading-relaxed text-[var(--muted)]">
-            After you complete checkout on this browser, your order reference, items, and delivery
+            After you order on WhatsApp from this browser, your order reference, items, and delivery
             details will show up here automatically.
           </p>
           <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
@@ -107,10 +107,10 @@ export function ProfileClient() {
               Browse shop
             </Link>
             <Link
-              href="/checkout"
+              href="/cart"
               className="inline-flex rounded-full border border-[var(--border-mid)] bg-white/80 px-8 py-3 font-[var(--font-dm-sans)] text-[14px] font-medium text-[var(--dark)] no-underline transition hover:bg-[var(--bg-card)]"
             >
-              Go to checkout
+              Go to cart
             </Link>
           </div>
         </div>

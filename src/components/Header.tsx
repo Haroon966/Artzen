@@ -169,7 +169,7 @@ function HeaderLoading() {
   return (
     <header
       data-site-header
-      className="site-header sticky top-0 z-[100] max-md:fixed max-md:left-0 max-md:right-0 max-md:top-[var(--site-mobile-announcement-h,40px)] max-md:z-[101] md:top-0"
+      className="site-header sticky top-0 z-[100] max-md:fixed max-md:left-0 max-md:right-0 max-md:top-0 max-md:z-[101] md:top-0"
     >
       <nav
         data-main-nav
@@ -259,9 +259,7 @@ function HeaderInner({ categoryLinks }: { categoryLinks: NavLinkItem[] }) {
     updateOverlayTop();
     const ro = new ResizeObserver(updateOverlayTop);
     const nav = document.querySelector("[data-main-nav]");
-    const ann = document.querySelector("[data-announcement-bar]");
     if (nav) ro.observe(nav);
-    if (ann) ro.observe(ann);
     window.addEventListener("resize", updateOverlayTop);
     return () => {
       ro.disconnect();
@@ -366,7 +364,7 @@ function HeaderInner({ categoryLinks }: { categoryLinks: NavLinkItem[] }) {
     <>
       <header
         data-site-header
-        className="site-header sticky top-0 z-[100] max-md:fixed max-md:left-0 max-md:right-0 max-md:top-[var(--site-mobile-announcement-h,40px)] max-md:z-[101] md:top-0"
+        className="site-header sticky top-0 z-[100] max-md:fixed max-md:left-0 max-md:right-0 max-md:top-0 max-md:z-[101] md:top-0"
       >
         <nav
           data-main-nav

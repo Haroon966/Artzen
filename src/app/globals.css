@@ -208,12 +208,8 @@ main.site-main {
 /* ── Mobile app shell (max-width: 767px only; desktop unchanged) ── */
 @media (max-width: 767px) {
   :root {
-    --site-mobile-announcement-h: 40px;
-    /* Single-row mobile nav (logo + actions); search opens in-place, not stacked in this reserve */
     --site-mobile-nav-h: 76px;
-    --site-mobile-header-total: calc(
-      var(--site-mobile-announcement-h) + var(--site-mobile-nav-h)
-    );
+    --site-mobile-header-total: var(--site-mobile-nav-h);
     --site-mobile-tabbar-h: calc(64px + env(safe-area-inset-bottom, 0px));
   }
 
@@ -223,18 +219,6 @@ main.site-main {
 
   body {
     font-size: 15px;
-  }
-
-  [data-announcement-bar].site-announcement-bar {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    z-index: 102;
-    min-height: var(--site-mobile-announcement-h);
-    display: flex;
-    align-items: center;
-    justify-content: center;
   }
 
   main.site-main {

@@ -1,4 +1,16 @@
 {
+  "redirects": [
+    {
+      "source": "/checkout",
+      "destination": "/cart/",
+      "permanent": true
+    },
+    {
+      "source": "/checkout/:path*",
+      "destination": "/cart/",
+      "permanent": true
+    }
+  ],
   "headers": [
     {
       "source": "/_next/static/(.*)",
