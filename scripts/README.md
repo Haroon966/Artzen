@@ -1,5 +1,14 @@
 # Scripts
 
+## sync-shopify-catalog.mjs / import-catalog-to-shopify.mjs
+
+Headless Shopify catalog bridge. Full setup: [`docs/shopify-setup.md`](../docs/shopify-setup.md).
+
+```bash
+npm run catalog:to-shopify    # Admin API: push local catalog → Shopify
+npm run catalog:from-shopify  # Storefront API: Shopify → data.generated.ts
+```
+
 ## import-deckure-products.mjs
 
 One-time (or periodic) script to import all products and images from the live [deckure.com](https://deckure.com/) WooCommerce store into this Next.js site.

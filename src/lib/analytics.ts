@@ -142,7 +142,15 @@ export function trackCheckoutSubmitAttempt(items: CartItem[], totalPrice: number
 }
 
 export function trackCheckoutSubmitFailed(
-  reason: "validation" | "empty_cart" | "network" | "formspree"
+  reason:
+    | "validation"
+    | "empty_cart"
+    | "network"
+    | "formspree"
+    | "shopify_not_configured"
+    | "missing_checkout_url"
+    | "checkout_exception"
+    | (string & {})
 ) {
   gtagEvent("checkout_submit_failed", { reason });
 }

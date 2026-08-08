@@ -18,6 +18,7 @@ export type ShopListProduct = Pick<
   | "hoverImage"
   | "collectionSlug"
   | "isNew"
+  | "shopifyVariantId"
 >;
 
 export function toShopListProduct(p: Product): ShopListProduct {
@@ -34,5 +35,6 @@ export function toShopListProduct(p: Product): ShopListProduct {
     hoverImage: p.hoverImage,
     collectionSlug: p.collectionSlug,
     isNew: p.isNew,
+    shopifyVariantId: p.shopifyVariantId,
   };
 }

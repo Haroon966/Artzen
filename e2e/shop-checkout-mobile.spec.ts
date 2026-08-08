@@ -10,7 +10,7 @@ async function firstProductCardLink(page: import("@playwright/test").Page) {
   return grid.locator("a[href*='/products/']").first();
 }
 
-test("mobile: shop → PDP → add to cart → cart delivery form", async ({ page }) => {
+test("mobile: shop → PDP → add to cart → cart checkout CTA", async ({ page }) => {
   await page.goto("/shop/", { waitUntil: "load" });
 
   const productLink = await firstProductCardLink(page);
@@ -27,8 +27,8 @@ test("mobile: shop → PDP → add to cart → cart delivery form", async ({ pag
 
   await page.goto("/cart/", { waitUntil: "load" });
 
-  await expect(page.getByText(/delivery details/i)).toBeVisible();
+  await expect(page.getByText(/shopify checkout/i)).toBeVisible();
   await expect(
-    page.getByRole("button", { name: "Order on WhatsApp", exact: true })
+    page.getByRole("button", { name: /proceed to checkout/i })
   ).toBeVisible();
 });

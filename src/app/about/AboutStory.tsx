@@ -193,8 +193,8 @@ export function AboutStory() {
             Ready to dress a wall?
           </h2>
           <p className="mx-auto mt-4 max-w-md font-[var(--font-dm-sans)] text-[15px] font-light leading-relaxed text-cream-deep/75">
-            Browse collections or message us — we&apos;re quick on WhatsApp for custom questions and
-            orders.
+            Browse collections and checkout online — Cash on Delivery nationwide. For custom
+            questions, use Contact or WhatsApp support.
           </p>
           <div className="mt-10 flex flex-wrap items-center justify-center gap-4">
             <Link

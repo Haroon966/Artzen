@@ -48,26 +48,32 @@ This creates `hostinger-upload.zip` at the project root. Upload it to `/public_h
 
 ### Hostinger deployment (auto + manual)
 
-- **Automatic (recommended):** push to `main` and GitHub Actions deploys to Hostinger using `.github/workflows/deploy-hostinger-static.yml`.
-- **Manual fallback:** run `npm run build:hostinger-upload`, upload `hostinger-upload.zip` to `/public_html/`, and extract it there.
+Hostinger serves the static `out/` export only. Set `NEXT_PUBLIC_SHOPIFY_STORE_DOMAIN` on **GitHub Actions** (baked into the build) — not in Hostinger’s PHP/.env UI. See [`docs/shopify-setup.md`](docs/shopify-setup.md).
+
+- **Automatic (recommended):** push to `main` → `.github/workflows/deploy-hostinger-static.yml`
+- **Manual fallback:** set domain in `.env.local`, `npm run build:hostinger-upload`, upload zip to `/public_html/`
 - Use manual deployment when FTP secrets are unavailable or you need an urgent one-off upload.
 
-## Orders
+## Orders / Shopify (Basic plan redirect)
 
-Checkout submissions are handled client-side and can be sent to Formspree.
-
-Required env var:
+Cart stays on Artzens. **Proceed to checkout** opens Shopify’s cart permalink (`/cart/VARIANT:QTY`) — works on **Basic**, no Headless/Grow required. Guide: [`docs/shopify-setup.md`](docs/shopify-setup.md)
 
 ```bash
-NEXT_PUBLIC_FORMSPREE_ID=your_form_id
+NEXT_PUBLIC_SITE_URL=https://artzens.com
+NEXT_PUBLIC_SHOPIFY_STORE_DOMAIN=store.artzens.com
+NEXT_PUBLIC_SITE_URL=https://artzens.com
 ```
 
-Optional env vars:
+```bash
+# Products already on Shopify → pull variant ids into Artzens catalog
+npm run catalog:sync-variant-ids
+# Or first-time push from Artzens → Shopify:
+# npm run catalog:to-shopify && npm run catalog:apply-shopify-map
+```
 
-- `NEXT_PUBLIC_SITE_URL` (absolute links in order payloads)
-- `NEXT_PUBLIC_WHATSAPP_PHONE` (WhatsApp fallback button/message)
+Optional: `NEXT_PUBLIC_WHATSAPP_PHONE` (PDP Call to Order), `SHOPIFY_ADMIN_TOKEN` (import only).
 
-To switch provider, edit `src/app/checkout/CheckoutForm.tsx`.
+See `.env.example` for the full list.
 
 ## SEO and prerender
 

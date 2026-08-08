@@ -35,9 +35,9 @@ export default function CODPage() {
             How it works
           </h2>
           <ul className="mt-2 list-inside list-disc space-y-1">
-            <li>Add items to your cart and enter your delivery details.</li>
-            <li>Enter your name, phone number, and delivery address.</li>
-            <li>We will confirm your order and ship it.</li>
+            <li>Add items to your cart on artzens.com.</li>
+            <li>Click Proceed to checkout and complete details on our secure checkout.</li>
+            <li>Choose Cash on Delivery as your payment method.</li>
             <li>Pay the delivery person in cash when you receive your order.</li>
           </ul>
         </div>

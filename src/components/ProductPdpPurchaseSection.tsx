@@ -4,14 +4,10 @@ import Link from "next/link";
 import { useCallback, useMemo, useState, useEffect, useRef } from "react";
 import { useCart } from "@/context/CartContext";
 import { useFavorites } from "@/context/FavoritesContext";
-import { trackAddToCart, trackViewItem } from "@/lib/analytics";
+import { trackAddToCart, trackBeginCheckout, trackViewItem } from "@/lib/analytics";
 import type { Product } from "@/lib/data";
 import { productDisplayName } from "@/lib/product-name";
-import {
-  buildProductOrderWhatsAppMessage,
-  getSiteOrigin,
-  whatsAppOrderLink,
-} from "@/lib/site";
+import { buyNowCheckoutUrl } from "@/lib/shopify";
 
 const FINISHES = [
   { name: "Natural", color: "#D4C4A8" },
@@ -45,21 +41,6 @@ function defaultLegacyMaterial(material?: string): (typeof LEGACY_MATERIALS)[num
   if (m.includes("acrylic")) return "Acrylic";
   if (m.includes("premium") || m.includes("mirror")) return "Premium";
   return "MDF Wood";
-}
-
-function PhoneIcon({ className }: { className?: string }) {
-  return (
-    <svg
-      className={className}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={2}
-      aria-hidden
-    >
-      <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
-    </svg>
-  );
 }
 
 function CartIcon({ className }: { className?: string }) {
@@ -138,42 +119,6 @@ export function ProductPdpPurchaseSection({
   const fav = isFavorite(product.id);
   const inCart = hasProductSlug(product.slug);
 
-  const orderName = useMemo(() => {
-    if (hasPdfSizes && selected) {
-      return `${productDisplayName(product)} — ${selected.label}`;
-    }
-    return productDisplayName(product);
-  }, [hasPdfSizes, selected, product]);
-
-  const orderHref = useMemo(() => {
-    const sizeLabel = hasPdfSizes
-      ? selected?.label
-      : `${legacySize}${product.dimensions ? ` (${product.dimensions})` : ""}`;
-    const materialLabel = hasPdfSizes ? displayMaterial : legacyMaterial;
-    return whatsAppOrderLink(
-      buildProductOrderWhatsAppMessage({
-        productName: orderName,
-        productUrl: `${getSiteOrigin()}/products/${product.slug}`,
-        price: hasPdfSizes ? displayPrice : product.price,
-        quantity: qty,
-        size: sizeLabel,
-        material: materialLabel ?? undefined,
-        finish,
-      })
-    );
-  }, [
-    hasPdfSizes,
-    selected,
-    product,
-    orderName,
-    displayPrice,
-    qty,
-    legacySize,
-    legacyMaterial,
-    displayMaterial,
-    finish,
-  ]);
-
   const payload = useMemo(() => {
     if (hasPdfSizes && selected) {
       const materialLabel = displayMaterial ?? "MDF";
@@ -183,6 +128,7 @@ export function ProductPdpPurchaseSection({
         name: `${productDisplayName(product)} — ${selected.label} (${materialLabel}, ${finish})`,
         price: selected.price,
         image: product.image,
+        merchandiseId: selected.shopifyVariantId ?? product.shopifyVariantId,
       };
     }
     return {
@@ -191,6 +137,7 @@ export function ProductPdpPurchaseSection({
       name: `${productDisplayName(product)} (${legacySize}, ${legacyMaterial}, ${finish})`,
       price: product.price,
       image: product.image,
+      merchandiseId: product.shopifyVariantId,
     };
   }, [
     hasPdfSizes,
@@ -226,6 +173,25 @@ export function ProductPdpPurchaseSection({
     if (addedTimeoutRef.current) clearTimeout(addedTimeoutRef.current);
     addedTimeoutRef.current = setTimeout(() => setJustAdded(false), 2000);
   }, [addItem, payload, qty]);
+
+  const handleBuyNow = useCallback(() => {
+    trackAddToCart({
+      item_id: payload.id,
+      item_name: payload.name,
+      price: payload.price,
+      quantity: qty,
+    });
+    trackBeginCheckout(
+      [{ ...payload, quantity: qty }],
+      payload.price * qty
+    );
+    const result = buyNowCheckoutUrl(payload.merchandiseId, qty);
+    if ("error" in result) {
+      window.alert(result.error);
+      return;
+    }
+    window.location.assign(result.url);
+  }, [payload, qty]);
 
   useEffect(() => {
     return () => {
@@ -368,7 +334,7 @@ export function ProductPdpPurchaseSection({
 
         <p className="font-[var(--font-dm-sans)] text-[12.5px] leading-relaxed text-[var(--text-muted)]">
           <strong className="font-medium text-[var(--text-secondary)]">Cash on Delivery</strong>{" "}
-          nationwide. We&apos;ll confirm your order on WhatsApp within 1–2 business days.{" "}
+          nationwide — add to cart, checkout securely, pay when your order arrives.{" "}
           <Link href="/cod/" className="text-[var(--sage-deep)] underline hover:text-[var(--sage)]">
             COD details
           </Link>
@@ -408,7 +374,7 @@ export function ProductPdpPurchaseSection({
           {inCart && !justAdded ? (
             <Link
               href="/cart"
-              className="flex h-[50px] min-w-0 flex-1 items-center justify-center gap-2 rounded-[var(--radius-md)] border-0 bg-[var(--sage)] font-[var(--font-dm-sans)] text-[14px] font-medium text-[var(--off-white)] no-underline transition-[background,transform] hover:bg-[var(--sage-deep)] active:scale-[0.98] sm:min-w-[180px]"
+              className="flex h-[50px] min-w-0 flex-1 items-center justify-center gap-2 rounded-[var(--radius-md)] border-0 bg-[var(--sage)] font-[var(--font-dm-sans)] text-[14px] font-medium text-[var(--off-white)] no-underline transition-[background,transform] hover:bg-[var(--sage-deep)] active:scale-[0.98] sm:min-w-[140px]"
             >
               <CartIcon className="h-4 w-4" />
               Go to cart
@@ -417,10 +383,10 @@ export function ProductPdpPurchaseSection({
             <button
               type="button"
               onClick={handleAddToCart}
-              className={`flex h-[50px] min-w-0 flex-1 items-center justify-center gap-2 rounded-[var(--radius-md)] border-0 font-[var(--font-dm-sans)] text-[14px] font-medium transition-[background,transform] active:scale-[0.98] sm:min-w-[180px] ${
+              className={`flex h-[50px] min-w-0 flex-1 items-center justify-center gap-2 rounded-[var(--radius-md)] border border-[var(--border-mid)] bg-[var(--bg-card)] font-[var(--font-dm-sans)] text-[14px] font-medium text-[var(--slate)] transition-[background,transform] active:scale-[0.98] sm:min-w-[140px] ${
                 justAdded
-                  ? "bg-[var(--sage)] text-[var(--off-white)]"
-                  : "bg-[var(--gold)] text-[var(--dark)] hover:bg-[var(--gold2)]"
+                  ? "border-[var(--sage)] bg-[var(--sage-muted)] text-[var(--slate)]"
+                  : "hover:bg-[var(--off-white-mid)]"
               }`}
             >
               <CartIcon className="h-4 w-4" />
@@ -428,15 +394,13 @@ export function ProductPdpPurchaseSection({
             </button>
           )}
 
-          <a
-            href={orderHref}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex h-[50px] shrink-0 items-center justify-center gap-2 rounded-[var(--radius-md)] border border-[var(--border-mid)] bg-[var(--bg-card)] px-4 font-[var(--font-dm-sans)] text-[13px] font-medium text-[var(--slate)] no-underline transition-[background,transform] hover:bg-[var(--off-white-mid)] active:scale-[0.98]"
+          <button
+            type="button"
+            onClick={handleBuyNow}
+            className="flex h-[50px] min-w-0 flex-1 items-center justify-center gap-2 rounded-[var(--radius-md)] border-0 bg-[var(--gold)] font-[var(--font-dm-sans)] text-[14px] font-semibold text-[var(--dark)] transition-[background,transform] hover:bg-[var(--gold2)] active:scale-[0.98] sm:min-w-[140px]"
           >
-            <PhoneIcon className="h-4 w-4" />
-            <span className="hidden sm:inline">Call to Order</span>
-          </a>
+            Buy now
+          </button>
 
           <button
             type="button"
@@ -462,37 +426,43 @@ export function ProductPdpPurchaseSection({
         }}
         aria-label="Quick purchase actions"
       >
+        <button
+          type="button"
+          onClick={handleBuyNow}
+          className="flex h-[50px] flex-[1.2] items-center justify-center gap-2 rounded-[var(--radius-md)] bg-[var(--gold)] font-[var(--font-dm-sans)] text-[14.5px] font-semibold text-[var(--dark)]"
+        >
+          Buy now
+        </button>
         {inCart && !justAdded ? (
           <Link
             href="/cart"
-            className="flex h-[50px] flex-1 items-center justify-center gap-2 rounded-[var(--radius-md)] bg-[var(--sage)] font-[var(--font-dm-sans)] text-[14.5px] font-medium text-[var(--off-white)] no-underline"
+            className="flex h-[50px] flex-1 items-center justify-center gap-2 rounded-[var(--radius-md)] bg-[var(--sage)] font-[var(--font-dm-sans)] text-[13px] font-medium text-[var(--off-white)] no-underline"
           >
-            <CartIcon className="h-4 w-4" />
-            Go to cart
+            Cart
           </Link>
         ) : (
           <button
             type="button"
             onClick={handleAddToCart}
-            className={`flex h-[50px] flex-1 items-center justify-center gap-2 rounded-[var(--radius-md)] font-[var(--font-dm-sans)] text-[14.5px] font-medium ${
+            className={`flex h-[50px] flex-1 items-center justify-center gap-2 rounded-[var(--radius-md)] font-[var(--font-dm-sans)] text-[13px] font-medium ${
               justAdded
                 ? "bg-[var(--sage)] text-[var(--off-white)]"
-                : "bg-[var(--gold)] text-[var(--dark)]"
+                : "border border-[var(--border-mid)] bg-[var(--bg-card)] text-[var(--slate)]"
             }`}
           >
-            <CartIcon className="h-4 w-4" />
-            {justAdded ? "Added" : "Add to cart"}
+            {justAdded ? "Added" : "Add"}
           </button>
         )}
-        <a
-          href={orderHref}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="flex h-[50px] w-[50px] shrink-0 items-center justify-center rounded-[var(--radius-md)] border border-[var(--border-mid)] bg-[var(--bg-card)] text-[var(--slate)] no-underline"
-          aria-label="Call to order on WhatsApp"
+        <button
+          type="button"
+          onClick={() => toggleFavorite(product.id)}
+          className={`flex h-[50px] w-[50px] shrink-0 items-center justify-center rounded-[var(--radius-md)] border border-[var(--border-mid)] bg-[var(--bg-card)] ${
+            fav ? "text-[var(--red)]" : "text-[var(--text-muted)]"
+          }`}
+          aria-label={fav ? "Remove from wishlist" : "Add to wishlist"}
         >
-          <PhoneIcon className="h-4 w-4" />
-        </a>
+          <HeartIcon className="h-[18px] w-[18px]" filled={fav} />
+        </button>
       </div>
     </>
   );

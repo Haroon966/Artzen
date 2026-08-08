@@ -96,8 +96,7 @@ export function ProfileClient() {
             No orders saved here yet
           </p>
           <p className="mx-auto mt-2 max-w-sm font-[var(--font-dm-sans)] text-[14px] leading-relaxed text-[var(--muted)]">
-            After you order on WhatsApp from this browser, your order reference, items, and delivery
-            details will show up here automatically.
+            After you place an order through checkout from this browser, details may appear here when available.
           </p>
           <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
             <Link

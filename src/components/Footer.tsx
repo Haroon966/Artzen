@@ -54,7 +54,7 @@ export function Footer({ categoryLinks }: { categoryLinks: NavLinkItem[] }) {
             <div className="mt-8 flex flex-wrap gap-2">
               <span className={pillSurface}>COD</span>
               <span className={pillSurface}>Nationwide delivery</span>
-              <span className={pillSurface}>WhatsApp support</span>
+              <span className={pillSurface}>Secure checkout</span>
             </div>
           </div>
 
@@ -153,7 +153,7 @@ export function Footer({ categoryLinks }: { categoryLinks: NavLinkItem[] }) {
           <div className="lg:col-span-3">
             <h2 className={label}>Get in touch</h2>
             <p className="mt-5 font-[var(--font-dm-sans)] text-[13px] leading-relaxed text-[var(--text-on-dark-muted)]">
-              Questions or order help? Message us on WhatsApp — we reply fast.
+              Questions? Message us on WhatsApp — we reply fast.
             </p>
             <a
               href={WA}

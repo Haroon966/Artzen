@@ -148,7 +148,7 @@ export default async function Home() {
             Ready to shop?
           </h2>
           <p className="mt-2 text-[var(--muted)]">
-            Explore the full store or message us on WhatsApp anytime.
+            Explore the full store — add to cart and checkout with Cash on Delivery.
           </p>
           <Link
             href="/shop"

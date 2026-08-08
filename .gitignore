@@ -40,6 +40,10 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 .env*
+!.env.example
+
+# Shopify Admin import map (contains store product IDs; safe but local)
+scripts/.shopify-import-map.json
 
 # vercel
 .vercel

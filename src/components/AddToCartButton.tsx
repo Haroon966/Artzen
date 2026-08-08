@@ -3,9 +3,10 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 import { useCart } from "@/context/CartContext";
-import { trackAddToCart } from "@/lib/analytics";
+import { trackAddToCart, trackBeginCheckout } from "@/lib/analytics";
 import type { Product } from "@/lib/data";
 import { productDisplayName } from "@/lib/product-name";
+import { buyNowCheckoutUrl } from "@/lib/shopify";
 
 function CartIcon({ className }: { className?: string }) {
   return (
@@ -30,12 +31,16 @@ export function AddToCartButton({ product }: { product: Product }) {
   const [justAdded, setJustAdded] = useState(false);
   const addedTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  const defaultVariantId =
+    product.sizeOptions?.[0]?.shopifyVariantId ?? product.shopifyVariantId;
+
   const payload = {
     id: product.id,
     slug: product.slug,
     name: productDisplayName(product),
     price: product.price,
     image: product.image,
+    merchandiseId: defaultVariantId,
   };
 
   const handleAddToCart = useCallback(() => {
@@ -51,6 +56,22 @@ export function AddToCartButton({ product }: { product: Product }) {
     addedTimeoutRef.current = setTimeout(() => setJustAdded(false), 2000);
   }, [addItem, payload]);
 
+  const handleBuyNow = useCallback(() => {
+    trackAddToCart({
+      item_id: payload.id,
+      item_name: payload.name,
+      price: payload.price,
+      quantity: 1,
+    });
+    trackBeginCheckout([{ ...payload, quantity: 1 }], payload.price);
+    const result = buyNowCheckoutUrl(payload.merchandiseId, 1);
+    if ("error" in result) {
+      window.alert(result.error);
+      return;
+    }
+    window.location.assign(result.url);
+  }, [payload]);
+
   useEffect(() => {
     return () => {
       if (addedTimeoutRef.current) clearTimeout(addedTimeoutRef.current);
@@ -58,14 +79,24 @@ export function AddToCartButton({ product }: { product: Product }) {
   }, []);
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-3">
+      <motion.button
+        type="button"
+        onClick={handleBuyNow}
+        className="inline-flex min-h-[50px] w-full items-center justify-center gap-2 rounded-full bg-[var(--gold)] px-8 py-3.5 font-[var(--font-dm-sans)] text-[14px] font-semibold text-[var(--dark)] shadow-[var(--shadow-md)] transition-colors hover:bg-[var(--gold2)] sm:min-w-[200px]"
+        whileHover={reduceMotion ? undefined : { y: -1 }}
+        whileTap={reduceMotion ? undefined : { scale: 0.98 }}
+        transition={{ duration: 0.15 }}
+      >
+        Buy now
+      </motion.button>
       <motion.button
         type="button"
         onClick={handleAddToCart}
-        className={`inline-flex min-h-[50px] w-full items-center justify-center gap-2 rounded-full px-8 py-3.5 font-[var(--font-dm-sans)] text-[14px] font-semibold shadow-[var(--shadow-md)] transition-colors sm:min-w-[200px] ${
+        className={`inline-flex min-h-[46px] w-full items-center justify-center gap-2 rounded-full border border-[var(--border-mid)] px-8 py-3 font-[var(--font-dm-sans)] text-[14px] font-medium transition-colors sm:min-w-[200px] ${
           justAdded
-            ? "bg-[var(--sage)] text-[var(--off-white)]"
-            : "bg-[var(--gold)] text-[var(--dark)] hover:bg-[var(--gold2)]"
+            ? "border-[var(--sage)] bg-[var(--sage)] text-[var(--off-white)]"
+            : "bg-[var(--bg-card)] text-[var(--dark)] hover:bg-[var(--off-white-mid)]"
         }`}
         whileHover={reduceMotion ? undefined : { y: -1 }}
         whileTap={reduceMotion ? undefined : { scale: 0.98 }}
@@ -75,7 +106,7 @@ export function AddToCartButton({ product }: { product: Product }) {
         {justAdded ? "Added" : "Add to cart"}
       </motion.button>
       <p className="font-[var(--font-dm-sans)] text-[12px] leading-relaxed text-[var(--muted)]">
-        Cash on delivery nationwide — pay when your order arrives.
+        Buy now opens secure checkout. Cash on delivery nationwide.
       </p>
     </div>
   );

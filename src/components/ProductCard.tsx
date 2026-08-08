@@ -13,7 +13,8 @@ import {
 import { productDisplayName } from "@/lib/product-name";
 import { useCart } from "@/context/CartContext";
 import { useFavorites } from "@/context/FavoritesContext";
-import { trackAddToCart, trackSelectItem } from "@/lib/analytics";
+import { trackAddToCart, trackBeginCheckout, trackSelectItem } from "@/lib/analytics";
+import { buyNowCheckoutUrl } from "@/lib/shopify";
 import { CatalogImageWatermark } from "@/components/CatalogImageWatermark";
 import {
   catalogImageProtectClassName,
@@ -32,12 +33,16 @@ function cartPayload(product: ProductCardModel) {
   const gallery =
     product.images && product.images.length > 0 ? product.images : [product.image];
   const cardPrimary = product.cardImage || gallery[0] || product.image;
+  const full = product as Product;
+  const merchandiseId =
+    full.sizeOptions?.[0]?.shopifyVariantId ?? product.shopifyVariantId;
   return {
     id: product.id,
     slug: product.slug,
     name: productDisplayName(product),
     price: product.price,
     image: cardPrimary,
+    merchandiseId,
   };
 }
 
@@ -111,6 +116,30 @@ function ProductCardInner({
     [addItem, cartItem]
   );
 
+  const handleBuyNow = useCallback(
+    (e: React.MouseEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      trackAddToCart({
+        item_id: cartItem.id,
+        item_name: cartItem.name,
+        price: cartItem.price,
+        quantity: 1,
+      });
+      trackBeginCheckout(
+        [{ ...cartItem, quantity: 1 }],
+        cartItem.price
+      );
+      const result = buyNowCheckoutUrl(cartItem.merchandiseId, 1);
+      if ("error" in result) {
+        window.alert(result.error);
+        return;
+      }
+      window.location.assign(result.url);
+    },
+    [cartItem]
+  );
+
   const handleSelect = useCallback(() => {
     trackSelectItem({
       item_id: product.id,
@@ -130,7 +159,7 @@ function ProductCardInner({
   );
 
   const cartActionClass =
-    "absolute bottom-0 left-0 right-0 z-[3] flex h-11 items-center justify-center gap-2 font-[var(--font-dm-sans)] text-[13px] font-medium no-underline transition-[transform,background-color] duration-300 ease-out max-lg:translate-y-0 lg:translate-y-full lg:group-hover:translate-y-0";
+    "absolute bottom-0 left-0 right-0 z-[3] flex h-11 items-stretch font-[var(--font-dm-sans)] text-[12px] font-medium no-underline transition-[transform] duration-300 ease-out max-lg:translate-y-0 lg:translate-y-full lg:group-hover:translate-y-0";
 
   return (
     <article
@@ -210,27 +239,37 @@ function ProductCardInner({
           </svg>
         </button>
 
-        {inCart ? (
-          <Link
-            href="/cart"
-            onClick={(e) => e.stopPropagation()}
-            className={`${cartActionClass} bg-[var(--golden-earth)] text-coffee-bean hover:bg-[var(--gold2)]`}
-            aria-label={`Go to cart — ${title} is in your cart`}
-          >
-            <CartIcon className="h-3.5 w-3.5" />
-            Go to cart
-          </Link>
-        ) : (
+        <div className={cartActionClass}>
           <button
             type="button"
-            onClick={handleAddToCart}
-            className={`${cartActionClass} border-0 bg-coffee-bean text-white hover:bg-coffee-hover`}
-            aria-label={`Add ${title} to cart`}
+            onClick={handleBuyNow}
+            className="flex flex-1 items-center justify-center gap-1.5 border-0 bg-[var(--golden-earth)] text-coffee-bean transition-colors hover:bg-[var(--gold2)]"
+            aria-label={`Buy ${title} now`}
           >
-            <CartIcon className="h-3.5 w-3.5" />
-            Add to cart
+            Buy now
           </button>
-        )}
+          {inCart ? (
+            <Link
+              href="/cart"
+              onClick={(e) => e.stopPropagation()}
+              className="flex flex-1 items-center justify-center gap-1.5 bg-coffee-bean text-white no-underline transition-colors hover:bg-coffee-hover"
+              aria-label={`Go to cart — ${title} is in your cart`}
+            >
+              <CartIcon className="h-3.5 w-3.5" />
+              Cart
+            </Link>
+          ) : (
+            <button
+              type="button"
+              onClick={handleAddToCart}
+              className="flex flex-1 items-center justify-center gap-1.5 border-0 bg-coffee-bean text-white transition-colors hover:bg-coffee-hover"
+              aria-label={`Add ${title} to cart`}
+            >
+              <CartIcon className="h-3.5 w-3.5" />
+              Add
+            </button>
+          )}
+        </div>
       </div>
 
       <div className="flex flex-1 flex-col px-4 pb-[18px] pt-3.5">

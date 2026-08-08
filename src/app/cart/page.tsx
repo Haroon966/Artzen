@@ -6,7 +6,7 @@ import { CartContent } from "./CartContent";
 
 export const metadata: Metadata = buildStaticPageMetadata({
   title: "Cart",
-  description: `Your cart at ${SITE_BRAND}. Review items and order on WhatsApp with Cash on Delivery.`,
+  description: `Your cart at ${SITE_BRAND}. Review items and checkout securely with Cash on Delivery.`,
   path: "/cart",
   robots: { index: false, follow: true },
 });
@@ -55,7 +55,7 @@ export default function CartPage() {
             Your cart
           </h1>
           <p className="mt-3 max-w-md font-[var(--font-dm-sans)] text-[15px] font-light leading-relaxed text-[var(--muted)]">
-            Enter your delivery details, then send your order on WhatsApp — pay only on delivery,
+            Review your items, then proceed to secure checkout — pay on delivery
             anywhere in Pakistan.
           </p>
         </header>

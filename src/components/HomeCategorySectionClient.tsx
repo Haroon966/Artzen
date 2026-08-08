@@ -76,10 +76,10 @@ export function HomeCategorySectionClient({
           </div>
           <div className="feature-item bg-[var(--cream)] px-6 py-7 text-center md:px-8">
             <h3 className="mb-2 font-[var(--font-dm-sans)] text-[15px] font-semibold text-[var(--text-primary)]">
-              💬 WhatsApp support
+              🔒 Secure checkout
             </h3>
             <p className="text-[13.5px] leading-relaxed text-[var(--muted)]">
-              Questions and order help — we reply fast on WhatsApp.
+              Add to cart and checkout online — Cash on Delivery available nationwide.
             </p>
           </div>
         </div>

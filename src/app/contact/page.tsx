@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { buildStaticPageMetadata } from "@/lib/seo-metadata";
 import { SITE_BRAND } from "@/lib/site";
 
-const description = `Get in touch with ${SITE_BRAND} for orders, support, and custom requests. Reach us on WhatsApp from anywhere in Pakistan.`;
+const description = `Get in touch with ${SITE_BRAND} for support and custom requests. Reach us on WhatsApp from anywhere in Pakistan.`;
 
 export const metadata: Metadata = buildStaticPageMetadata({
   title: "Contact",
@@ -18,8 +18,9 @@ export default function ContactPage() {
         Contact Us
       </h1>
       <p className="mt-4 text-forest/80">
-        We would love to hear from you. For orders, questions, or custom
-        requests, reach out on WhatsApp or email.
+        We would love to hear from you. For questions or custom requests, reach
+        out on WhatsApp or email. To place an order, add items to your cart and
+        proceed to checkout.
       </p>
       <div className="mt-8 space-y-6">
         <div>

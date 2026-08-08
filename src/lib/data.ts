@@ -29,7 +29,18 @@ export interface Product {
    * Selectable size / price tiers from the rate-list PDF (label + price + optional material).
    * When set, PDP uses these instead of generic Small/Medium/Large.
    */
-  sizeOptions?: Array<{ id: string; label: string; price: number; material?: string }>;
+  sizeOptions?: Array<{
+    id: string;
+    label: string;
+    price: number;
+    material?: string;
+    /** Shopify Storefront variant GID for this size tier. */
+    shopifyVariantId?: string;
+  }>;
+  /** Shopify Storefront product GID (gid://shopify/Product/…). */
+  shopifyProductId?: string;
+  /** Default Shopify variant GID when there are no size options (or first size). */
+  shopifyVariantId?: string;
   /** Show golden “New” badge when not on sale (optional). */
   isNew?: boolean;
 }
